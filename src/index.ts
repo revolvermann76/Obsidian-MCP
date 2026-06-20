@@ -4,6 +4,14 @@ import { scanVault } from './indexer.js'
 import { watchVault } from './watcher.js'
 import { startServer } from './server.js'
 
+/**
+ * Parses the `--vault` and optional `--db` command-line arguments.
+ *
+ * Exits the process with a usage message if `--vault` is missing.
+ *
+ * @returns An object containing the resolved absolute paths for the vault
+ *   directory and the SQLite database file.
+ */
 function parseArgs(): { vaultPath: string; dbPath: string } {
   const args = process.argv.slice(2)
   const vaultIdx = args.indexOf('--vault')
@@ -20,6 +28,16 @@ function parseArgs(): { vaultPath: string; dbPath: string } {
   return { vaultPath, dbPath }
 }
 
+/**
+ * Application entry point.
+ *
+ * Runs the startup sequence in order:
+ * 1. Parse CLI arguments
+ * 2. Open / initialize the SQLite database
+ * 3. Full vault scan with delta detection
+ * 4. Start the file system watcher
+ * 5. Start the MCP server on stdio
+ */
 async function main(): Promise<void> {
   const { vaultPath, dbPath } = parseArgs()
 

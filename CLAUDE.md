@@ -15,8 +15,10 @@ npm run format:check # prettier check (CI)
 
 Run the server:
 ```bash
-node dist/index.js --vault /path/to/obsidian-vault
-node dist/index.js --vault /path/to/vault --db /path/to/index.db
+node dist/index.cjs --vault /path/to/obsidian-vault
+node dist/index.cjs --vault /path/to/vault --db /path/to/index.db
+npm run start:test   # runs against test-vault/
+npm run inspect      # starts MCP Inspector UI at localhost:6277
 ```
 
 ## Architecture
@@ -55,7 +57,9 @@ MCP server that indexes an Obsidian vault into SQLite and exposes query tools ov
 - `search_by_tag` — find notes by frontmatter tag
 
 **Key design decisions:**
-- esbuild bundles everything to a single `dist/index.js`; tsc is only used for type-checking (`--noEmit`)
+- esbuild bundles everything to `dist/index.cjs` (CJS format); tsc is only used for type-checking (`--noEmit`)
+- `"type": "module"` stays in package.json so tsc treats sources as ESM (required by `verbatimModuleSyntax`); the `.cjs` extension tells Node the bundle is CommonJS
+- `better-sqlite3` is marked `--external` in esbuild because native `.node` addons cannot be bundled
 - `better-sqlite3` is synchronous — indexer uses transactions for performance, watcher uses sync `readFileSync`
 - Change detection uses SHA-1 content hash, not mtime
 - DB defaults to `<vault>/.mcp-index.db`; override with `--db`

@@ -1,6 +1,19 @@
 import Database from 'better-sqlite3'
 import type { Database as DB } from 'better-sqlite3'
 
+/**
+ * Opens (or creates) the SQLite database at the given path and initializes the schema.
+ *
+ * Sets WAL journal mode and enables foreign key enforcement. Creates the following
+ * tables and objects if they do not exist yet:
+ * - `notes` — stores indexed markdown files
+ * - `tags` — frontmatter tags per note (CASCADE delete)
+ * - `links` — wikilinks and markdown links per note (CASCADE delete)
+ * - `notes_fts` — FTS5 virtual table backed by `notes`, kept in sync via triggers
+ *
+ * @param dbPath - Absolute path to the SQLite database file.
+ * @returns An open `better-sqlite3` database instance.
+ */
 export function openDatabase(dbPath: string): DB {
   const db = new Database(dbPath)
   db.pragma('journal_mode = WAL')

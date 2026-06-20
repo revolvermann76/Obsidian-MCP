@@ -4,6 +4,21 @@ import { z } from 'zod'
 import type { Database } from 'better-sqlite3'
 import { searchNotes, readNote, listNotes, getBacklinks, searchByTag } from './tools.js'
 
+/**
+ * Registers all MCP tools and starts the server on stdio.
+ *
+ * Exposes five tools to MCP clients:
+ * - `search_notes` — FTS5 fulltext search with highlighted snippets
+ * - `read_note` — read the full content of a note by path or title
+ * - `list_notes` — list all notes, filterable by folder or tag
+ * - `get_backlinks` — find notes that link to a given note
+ * - `search_by_tag` — find notes by frontmatter tag
+ *
+ * All tools are pure read operations; the server never modifies the vault or database.
+ *
+ * @param db - Open SQLite database instance populated by the indexer.
+ * @returns A promise that resolves once the server is connected to the stdio transport.
+ */
 export async function startServer(db: Database): Promise<void> {
   const server = new McpServer({
     name: 'obsidian-mcp',
