@@ -5,6 +5,10 @@ tags:
   - inneres-sonnensystem
   - astronomie
   - raumfahrt
+aliases: ["Red Planet", "der Rote"]
+related:
+  - "[[Erde]]"
+  - "[[Sonne]]"
 ---
 
 # Mars
@@ -36,9 +40,9 @@ Mars ist der vierte Planet im [[Sonnensystem]] und der äußerste der inneren Ge
 
 ## Mars und die Erde
 
-Mars gilt als vielversprechendster Kandidat für zukünftige bemannte Raumfahrt. Im Vergleich zur [[Erde]] hat Mars:
+Mars gilt als vielversprechendster Kandidat für zukünftige bemannte Raumfahrt. Im Vergleich zur Erde hat Mars:
 - eine viel dünnere Atmosphäre
 - kein globales Magnetfeld
 - keine flüssige Wasseroberfläche (obwohl Wassereis an den Polen vorhanden ist)
 
-Sein Nachbar im inneren [[Sonnensystem]] ist die [[Erde]]; jenseits seiner Bahn beginnt der [[Asteroidengürtel]].
+Sein Nachbar im inneren [[Sonnensystem]] ist die Erde; jenseits seiner Bahn beginnt der [[Asteroidengürtel]].
