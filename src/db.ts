@@ -45,6 +45,13 @@ export function openDatabase(dbPath: string): DB {
       target_path TEXT    NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS properties (
+      note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      key     TEXT    NOT NULL,
+      value   TEXT    NOT NULL,
+      PRIMARY KEY (note_id, key)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_path);
 
     CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(

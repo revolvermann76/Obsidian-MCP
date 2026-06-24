@@ -6,6 +6,7 @@ import { registerReadTools } from './tools/readTools.js'
 import { registerBacklinkTools } from './tools/backlinkTools.js'
 import { registerAliasesTools } from './tools/aliasTools.js'
 import { registerTagTools } from './tools/tagTools.js'
+import { registerPropertyTools } from './tools/propertyTools.js'
 
 /**
  * Registers all MCP tools and starts the server on stdio.
@@ -29,6 +30,7 @@ export async function startServer(db: Database, vaultPath: string): Promise<void
   })
 
   registerAliasesTools(db, server, vaultPath)
+  registerPropertyTools(db, server)
   registerBacklinkTools(db, server)
   registerReadTools(db, server)
   registerSearchTools(db, server)

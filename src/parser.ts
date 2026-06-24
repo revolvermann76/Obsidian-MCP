@@ -50,7 +50,7 @@ export function parseNote(raw: string, filePath: string): ParsedNote {
 
   const hash = createHash('sha1').update(raw).digest('hex')
 
-  return { title, content, tags, aliases, links, hash }
+  return { title, content, tags, aliases, links, hash, properties: data }
 }
 
 /**

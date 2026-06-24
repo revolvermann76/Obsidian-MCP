@@ -55,12 +55,7 @@ Commands:
   properties            List properties in the vault
     file=<name>         - Show properties for file
     path=<path>         - Show properties for path
-    name=<name>         - Get specific property count
-    total               - Return property count
-    sort=count          - Sort by count (default: name)
-    counts              - Include occurrence counts
-    format=yaml|json|tsv  - Output format (default: yaml)
-    active              - Show properties for active file
+    name=<name>         - Get specific property
 
   property:read         Read a property value from a file
     name=<name>         - Property name (required)

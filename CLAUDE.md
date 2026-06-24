@@ -41,7 +41,7 @@ MCP server that indexes an Obsidian vault into SQLite and exposes query tools ov
 | `src/types.ts` | Shared interfaces: `Note`, `ParsedNote` |
 | `src/db.ts` | Schema creation, FTS5 virtual table, UPDATE/DELETE triggers |
 | `src/parser.ts` | Parse raw markdown: frontmatter (gray-matter), inline tags, wikilinks (body + frontmatter values), MD links, aliases, SHA-1 hash |
-| `src/indexer.ts` | Walk vault recursively, upsert notes/tags/aliases/links, remove deleted files |
+| `src/indexer.ts` | Walk vault recursively, upsert notes/tags/aliases/links/properties, remove deleted files |
 | `src/watcher.ts` | chokidar watcher → calls `indexFile` / `removeFile` on changes |
 | `src/server.ts` | Orchestrates MCP tool registration + stdio transport |
 | `src/parser.test.ts` | Vitest unit tests for `parseNote` |
@@ -57,6 +57,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | `src/tools/backlinkTools.ts` | `get_backlinks` | Notes linking to a given note |
 | `src/tools/tagTools.ts` | `search_by_tag` | Filtering by tag |
 | `src/tools/aliasTools.ts` | `list-aliases`, `add-alias`, `remove-alias` | Listing, adding, and removing aliases |
+| `src/tools/propertyTools.ts` | `list-properties` | Listing frontmatter properties |
 
 **DB schema:**
 - `notes` — id, path (relative to vault), title, content, content_hash (SHA-1), mtime
@@ -64,6 +65,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `tags` — note_id → tag (frontmatter + inline body tags, CASCADE delete)
 - `aliases` — note_id → alias (from frontmatter `aliases` key, CASCADE delete)
 - `links` — source_id → target_path (wikilinks in body + frontmatter string values, MD links, CASCADE delete)
+- `properties` — note_id → key, value (all raw frontmatter key-value pairs; value stored as JSON string, CASCADE delete)
 
 **MCP tools:**
 - `search_notes` — FTS5 fulltext search with snippet highlighting, returns title + path + snippet
@@ -74,6 +76,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `list-aliases` — list aliases; filterable by `file`, `path`; supports `total` (count only) and `verbose` (include paths)
 - `add-alias` — add an alias to a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately
 - `remove-alias` — remove an alias from a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately; drops the `aliases` key entirely if the list becomes empty
+- `list-properties` — list frontmatter properties from the DB index; no filters → unique property names across vault; `file`/`path` → all properties for that note (`file` resolves by title or alias); add `name` → value of a specific property (or all notes that have it, if no file/path given)
 - `exit` — shut down the MCP server process
 
 **Key design decisions:**
@@ -90,4 +93,5 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - Shared types (`Note`, `ParsedNote`) live in `src/types.ts`; `parser.ts` re-exports `ParsedNote` for backwards compatibility
 - chokidar watches the vault directory directly (not a glob pattern) with `usePolling: true` — glob-based watching is unreliable on Windows with chokidar v5
 - Inline tags (`#tag`, `#tag/subtag`) are extracted from the note body and merged with frontmatter tags; subtags are stored as a single flat string
+- All frontmatter key-value pairs are stored in `properties` (values as JSON strings); this includes `tags`, `aliases`, and any custom keys
 - Wikilinks are extracted from both the note body and from frontmatter string values (e.g. a `related` list)

@@ -20,4 +20,6 @@ export interface ParsedNote {
   links: string[]
   /** SHA-1 hex digest of the raw file content, used for change detection. */
   hash: string
+  /** All raw frontmatter key-value pairs. */
+  properties: Record<string, unknown>
 }

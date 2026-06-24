@@ -39,6 +39,7 @@ export async function scanVault(db: Database, vaultPath: string): Promise<void> 
     upsertTags(db, noteId, parsed.tags)
     upsertAliases(db, noteId, parsed.aliases)
     upsertLinks(db, noteId, parsed.links)
+    upsertProperties(db, noteId, parsed.properties)
   })
 
   for (const absPath of files) {
@@ -83,6 +84,7 @@ export function indexFile(db: Database, vaultPath: string, absPath: string): voi
     upsertTags(db, noteId, parsed.tags)
     upsertAliases(db, noteId, parsed.aliases)
     upsertLinks(db, noteId, parsed.links)
+    upsertProperties(db, noteId, parsed.properties)
   } catch (err) {
     console.error(`[indexer] Failed to index ${relPath}:`, err)
   }
@@ -160,6 +162,14 @@ function upsertAliases(db: Database, noteId: number, aliases: string[]): void {
   const insert = db.prepare('INSERT INTO aliases (note_id, alias) VALUES (?, ?)')
   for (const alias of aliases) {
     insert.run(noteId, alias)
+  }
+}
+
+function upsertProperties(db: Database, noteId: number, properties: Record<string, unknown>): void {
+  db.prepare('DELETE FROM properties WHERE note_id = ?').run(noteId)
+  const insert = db.prepare('INSERT INTO properties (note_id, key, value) VALUES (?, ?, ?)')
+  for (const [key, value] of Object.entries(properties)) {
+    insert.run(noteId, key, JSON.stringify(value))
   }
 }
 
