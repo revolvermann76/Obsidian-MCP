@@ -2,6 +2,13 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Database } from 'better-sqlite3'
 import { z } from 'zod'
 
+/**
+ * Finds all notes that carry a specific tag (frontmatter or inline body tag).
+ *
+ * @param db - Open SQLite database instance.
+ * @param tag - Exact tag string to match against, without the leading `#`.
+ * @returns Array of `{ path, title }` objects ordered by vault-relative path.
+ */
 function searchByTag(db: Database, tag: string): { path: string; title: string }[] {
   return db
     .prepare(
@@ -13,6 +20,12 @@ function searchByTag(db: Database, tag: string): { path: string; title: string }
     .all(tag) as { path: string; title: string }[]
 }
 
+/**
+ * Registers the `search_by_tag` MCP tool on the given server.
+ *
+ * @param db - Open SQLite database instance.
+ * @param server - MCP server instance to register the tool on.
+ */
 export function registerTagTools(db: Database, server: McpServer): void {
   server.registerTool(
     'search_by_tag',

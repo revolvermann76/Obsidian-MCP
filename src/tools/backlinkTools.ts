@@ -3,6 +3,19 @@ import type { Database } from 'better-sqlite3'
 import { z } from 'zod'
 import { readNote } from './readTools.js'
 
+/**
+ * Finds all notes that contain a wikilink or markdown link pointing to the given note.
+ *
+ * Resolves the input against the database first to obtain the note's title; if no
+ * match is found the raw input is used as the target. Both the resolved title and
+ * the original input are matched against `links.target_path` so that links stored
+ * as either a title or a path are caught.
+ *
+ * @param db - Open SQLite database instance.
+ * @param pathOrTitle - Vault-relative path or title of the target note.
+ * @returns Array of `{ path, title }` objects for every note that links to the target,
+ *   ordered by path. Empty array when no backlinks exist.
+ */
 function getBacklinks(db: Database, pathOrTitle: string): { path: string; title: string }[] {
   const note = readNote(db, pathOrTitle)
   const target = note ? note.title : pathOrTitle
@@ -17,6 +30,12 @@ function getBacklinks(db: Database, pathOrTitle: string): { path: string; title:
     .all(target, pathOrTitle) as { path: string; title: string }[]
 }
 
+/**
+ * Registers the `get_backlinks` MCP tool on the given server.
+ *
+ * @param db - Open SQLite database instance.
+ * @param server - MCP server instance to register the tool on.
+ */
 export function registerBacklinkTools(db: Database, server: McpServer): void {
   server.registerTool(
     'get_backlinks',

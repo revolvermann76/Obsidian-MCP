@@ -52,6 +52,19 @@ function listAliases(
   return opts.verbose ? rows : rows.map((r) => ({ alias: r.alias }))
 }
 
+/**
+ * Adds a new alias to a note, updating both the frontmatter on disk and the database.
+ *
+ * The note is resolved by vault-relative path, title, or existing alias.
+ * Returns an error result (without throwing) if the note is not found or the
+ * alias already exists.
+ *
+ * @param db - Open SQLite database instance.
+ * @param vaultPath - Absolute path to the vault root.
+ * @param noteRef - Note identifier: vault-relative path, title, or existing alias.
+ * @param newAlias - Alias to add.
+ * @returns Object with `success` flag and a human-readable `message`.
+ */
 function addAlias(
   db: Database,
   vaultPath: string,
@@ -89,6 +102,20 @@ function addAlias(
   return { success: true, message: `Added alias "${newAlias}" to "${note.title}"` }
 }
 
+/**
+ * Removes an alias from a note, updating both the frontmatter on disk and the database.
+ *
+ * The note is resolved by vault-relative path, title, or existing alias.
+ * If removing the alias leaves the `aliases` list empty, the key is deleted
+ * from the frontmatter entirely. Returns an error result (without throwing) if
+ * the note or alias is not found.
+ *
+ * @param db - Open SQLite database instance.
+ * @param vaultPath - Absolute path to the vault root.
+ * @param noteRef - Note identifier: vault-relative path, title, or existing alias.
+ * @param targetAlias - Alias to remove.
+ * @returns Object with `success` flag and a human-readable `message`.
+ */
 function removeAlias(
   db: Database,
   vaultPath: string,
@@ -131,6 +158,13 @@ function removeAlias(
   return { success: true, message: `Removed alias "${targetAlias}" from "${note.title}"` }
 }
 
+/**
+ * Registers the `list-aliases`, `add-alias`, and `remove-alias` MCP tools on the given server.
+ *
+ * @param db - Open SQLite database instance.
+ * @param server - MCP server instance to register the tools on.
+ * @param vaultPath - Absolute path to the vault root, required for on-disk frontmatter writes.
+ */
 export function registerAliasesTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
     'list-aliases',

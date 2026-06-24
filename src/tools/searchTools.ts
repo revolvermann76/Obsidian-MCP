@@ -2,6 +2,18 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Database } from 'better-sqlite3'
 import { z } from 'zod'
 
+/**
+ * Performs a fulltext search across all indexed notes using SQLite FTS5.
+ *
+ * Results are ranked by relevance and each row includes a highlighted snippet
+ * with matched terms wrapped in `**`. The snippet is extracted from the note
+ * body (column index 1) and capped at 32 tokens with `...` as the ellipsis.
+ *
+ * @param db - Open SQLite database instance.
+ * @param query - Search query in SQLite FTS5 syntax (e.g. `"exact phrase"`, `term*`).
+ * @param limit - Maximum number of results to return. Defaults to 20.
+ * @returns Array of `{ path, title, snippet }` objects ordered by relevance.
+ */
 function searchNotes(
   db: Database,
   query: string,
@@ -19,6 +31,17 @@ function searchNotes(
     .all(query, limit) as { path: string; title: string; snippet: string }[]
 }
 
+/**
+ * Lists notes from the database with optional filtering by folder or tag.
+ *
+ * When `tag` is provided it takes precedence over `folder`. Without any filter
+ * all notes are returned, ordered by vault-relative path.
+ *
+ * @param db - Open SQLite database instance.
+ * @param opts.folder - Vault-relative folder prefix to filter by (e.g. `"projects"`).
+ * @param opts.tag - Exact tag string to filter by (frontmatter or inline).
+ * @returns Array of `{ path, title }` objects ordered by path.
+ */
 function listNotes(
   db: Database,
   opts: { folder?: string; tag?: string } = {},
@@ -44,6 +67,12 @@ function listNotes(
   }[]
 }
 
+/**
+ * Registers the `search_notes` and `list_notes` MCP tools on the given server.
+ *
+ * @param db - Open SQLite database instance.
+ * @param server - MCP server instance to register the tools on.
+ */
 export function registerSearchTools(db: Database, server: McpServer): void {
   server.registerTool(
     'search_notes',
