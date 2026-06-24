@@ -23,6 +23,11 @@ npm run start:test   # runs against test-vault/
 npm run inspect      # starts MCP Inspector UI at localhost:6277
 ```
 
+## Documentation
+
+- `docs/tools-overview.md` — detailed reference for all MCP tools: parameters, result formats, and error messages
+- `reference/obsidian.help.md` — quick-reference for Obsidian command syntax
+
 ## Architecture
 
 MCP server that indexes an Obsidian vault into SQLite and exposes query tools over stdio.
