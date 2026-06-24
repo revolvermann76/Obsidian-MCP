@@ -144,6 +144,19 @@ describe('links', () => {
     const result = parseNote('[site](https://example.com)', 'x.md')
     expect(result.links).toHaveLength(0)
   })
+
+  it('extracts wikilinks from frontmatter string values', () => {
+    const raw = '---\nrelated:\n  - "[[Erde]]"\n  - "[[Sonne]]"\n---\nBody'
+    const result = parseNote(raw, 'x.md')
+    expect(result.links).toContain('Erde')
+    expect(result.links).toContain('Sonne')
+  })
+
+  it('extracts wikilinks from frontmatter with display text', () => {
+    const raw = '---\nrelated: "[[Erde|Terra]]"\n---\nBody'
+    const result = parseNote(raw, 'x.md')
+    expect(result.links).toContain('Erde')
+  })
 })
 
 // ---------------------------------------------------------------------------

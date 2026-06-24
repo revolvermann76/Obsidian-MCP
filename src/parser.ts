@@ -50,7 +50,7 @@ export function parseNote(raw: string, filePath: string): ParsedNote {
   }
   const tags = [...new Set([...frontmatterTags, ...inlineTags])]
 
-  const links: string[] = []
+  const links: string[] = [...extractFrontmatterLinks(data)]
   for (const match of content.matchAll(WIKILINK_RE)) {
     const target = match[1]
     if (target) links.push(target.trim())
@@ -102,4 +102,23 @@ function normalizeAliases(raw: unknown): string[] {
   if (typeof raw === 'string') return [raw].filter(Boolean)
   if (Array.isArray(raw)) return raw.map(String).filter(Boolean)
   return []
+}
+
+function flattenToStrings(value: unknown): string[] {
+  if (typeof value === 'string') return [value]
+  if (Array.isArray(value)) return value.flatMap(flattenToStrings)
+  return []
+}
+
+function extractFrontmatterLinks(data: Record<string, unknown>): string[] {
+  const links: string[] = []
+  for (const value of Object.values(data)) {
+    for (const str of flattenToStrings(value)) {
+      for (const match of str.matchAll(WIKILINK_RE)) {
+        const target = match[1]
+        if (target) links.push(target.trim())
+      }
+    }
+  }
+  return links
 }
