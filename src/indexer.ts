@@ -157,6 +157,15 @@ function upsertTags(db: Database, noteId: number, tags: string[]): void {
   }
 }
 
+/**
+ * Replaces all alias rows for a note with the current set of aliases.
+ *
+ * Deletes existing aliases first to handle renames and removals correctly.
+ *
+ * @param db - Open SQLite database instance.
+ * @param noteId - Primary key of the note in the `notes` table.
+ * @param aliases - Current list of aliases from the frontmatter `aliases` key.
+ */
 function upsertAliases(db: Database, noteId: number, aliases: string[]): void {
   db.prepare('DELETE FROM aliases WHERE note_id = ?').run(noteId)
   const insert = db.prepare('INSERT INTO aliases (note_id, alias) VALUES (?, ?)')
@@ -165,6 +174,17 @@ function upsertAliases(db: Database, noteId: number, aliases: string[]): void {
   }
 }
 
+/**
+ * Replaces all property rows for a note with the current set of frontmatter key-value pairs.
+ *
+ * Deletes existing properties first to handle key renames and removals correctly.
+ * Values are serialized to JSON strings so all YAML types (strings, numbers,
+ * booleans, arrays, objects) are preserved without loss.
+ *
+ * @param db - Open SQLite database instance.
+ * @param noteId - Primary key of the note in the `notes` table.
+ * @param properties - Raw frontmatter data object produced by gray-matter.
+ */
 function upsertProperties(db: Database, noteId: number, properties: Record<string, unknown>): void {
   db.prepare('DELETE FROM properties WHERE note_id = ?').run(noteId)
   const insert = db.prepare('INSERT INTO properties (note_id, key, value) VALUES (?, ?, ?)')

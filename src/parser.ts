@@ -83,6 +83,15 @@ function normalizeTags(raw: unknown): string[] {
   return []
 }
 
+/**
+ * Normalizes the raw `aliases` value from YAML frontmatter into a string array.
+ *
+ * Accepts a single string or a YAML sequence. Non-string sequence items are
+ * coerced with `String()`.
+ *
+ * @param raw - The raw value of the `aliases` frontmatter key.
+ * @returns A flat array of non-empty alias strings.
+ */
 function normalizeAliases(raw: unknown): string[] {
   if (!raw) return []
   if (typeof raw === 'string') return [raw].filter(Boolean)
@@ -90,12 +99,31 @@ function normalizeAliases(raw: unknown): string[] {
   return []
 }
 
+/**
+ * Recursively flattens an unknown value into a flat array of strings.
+ *
+ * Used to walk arbitrary frontmatter values (scalars, nested arrays) when
+ * searching for embedded wikilinks.
+ *
+ * @param value - Any value from a frontmatter field.
+ * @returns All string leaves found within `value`.
+ */
 function flattenToStrings(value: unknown): string[] {
   if (typeof value === 'string') return [value]
   if (Array.isArray(value)) return value.flatMap(flattenToStrings)
   return []
 }
 
+/**
+ * Extracts wikilink targets from all string values in a frontmatter data object.
+ *
+ * Walks every frontmatter field recursively (via {@link flattenToStrings}) and
+ * applies the wikilink regex, so links embedded in fields like `related` or
+ * `parent` are captured alongside body links.
+ *
+ * @param data - Raw frontmatter key-value pairs from gray-matter.
+ * @returns Flat array of wikilink target strings found across all frontmatter values.
+ */
 function extractFrontmatterLinks(data: Record<string, unknown>): string[] {
   const links: string[] = []
   for (const value of Object.values(data)) {
