@@ -89,6 +89,48 @@ function addAlias(
   return { success: true, message: `Added alias "${newAlias}" to "${note.title}"` }
 }
 
+function removeAlias(
+  db: Database,
+  vaultPath: string,
+  noteRef: string,
+  targetAlias: string,
+): { success: boolean; message: string } {
+  const note = db
+    .prepare(
+      `SELECT n.id, n.path, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(noteRef, noteRef, noteRef) as { id: number; path: string; title: string } | undefined
+
+  if (!note) return { success: false, message: `Note not found: ${noteRef}` }
+
+  const exists = db.prepare('SELECT 1 FROM aliases WHERE note_id = ? AND alias = ?').get(note.id, targetAlias)
+  if (!exists) return { success: false, message: `Alias "${targetAlias}" not found on "${note.title}"` }
+
+  const absPath = join(vaultPath, note.path)
+  const raw = readFileSync(absPath, 'utf-8')
+  const { data, content } = matter(raw)
+
+  const current: string[] = Array.isArray(data['aliases'])
+    ? (data['aliases'] as string[])
+    : data['aliases']
+      ? [String(data['aliases'])]
+      : []
+  const updated = current.filter((a) => a !== targetAlias)
+  if (updated.length === 0) {
+    delete data['aliases']
+  } else {
+    data['aliases'] = updated
+  }
+
+  writeFileSync(absPath, matter.stringify(content, data), 'utf-8')
+  db.prepare('DELETE FROM aliases WHERE note_id = ? AND alias = ?').run(note.id, targetAlias)
+
+  return { success: true, message: `Removed alias "${targetAlias}" from "${note.title}"` }
+}
+
 export function registerAliasesTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
     'list-aliases',
@@ -125,6 +167,21 @@ export function registerAliasesTools(db: Database, server: McpServer, vaultPath:
     },
     async ({ note, alias }) => {
       const result = addAlias(db, vaultPath, note, alias)
+      return { content: [{ type: 'text', text: result.message }] }
+    },
+  )
+
+  server.registerTool(
+    'remove-alias',
+    {
+      description: 'Remove an alias from a note, identified by its title, existing alias, or path',
+      inputSchema: {
+        note: z.string().describe('Note title, existing alias, or vault-relative path'),
+        alias: z.string().describe('Alias to remove'),
+      },
+    },
+    async ({ note, alias }) => {
+      const result = removeAlias(db, vaultPath, note, alias)
       return { content: [{ type: 'text', text: result.message }] }
     },
   )

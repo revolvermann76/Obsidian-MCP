@@ -56,7 +56,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | `src/tools/readTools.ts` | `read_note` | Reading a single note by path, title, or alias |
 | `src/tools/backlinkTools.ts` | `get_backlinks` | Notes linking to a given note |
 | `src/tools/tagTools.ts` | `search_by_tag` | Filtering by tag |
-| `src/tools/aliasTools.ts` | `list-aliases`, `add-alias` | Listing and adding aliases |
+| `src/tools/aliasTools.ts` | `list-aliases`, `add-alias`, `remove-alias` | Listing, adding, and removing aliases |
 
 **DB schema:**
 - `notes` — id, path (relative to vault), title, content, content_hash (SHA-1), mtime
@@ -73,6 +73,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `search_by_tag` — find notes by frontmatter tag or inline body tag
 - `list-aliases` — list aliases; filterable by `file`, `path`; supports `total` (count only) and `verbose` (include paths)
 - `add-alias` — add an alias to a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately
+- `remove-alias` — remove an alias from a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately; drops the `aliases` key entirely if the list becomes empty
 - `exit` — shut down the MCP server process
 
 **Key design decisions:**
