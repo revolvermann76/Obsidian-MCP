@@ -25,10 +25,15 @@ export async function startServer(db: Database): Promise<void> {
     version: '1.0.0',
   })
 
-  server.tool(
+  server.registerTool(
     'search_notes',
-    'Fulltext search across all notes in the vault',
-    { query: z.string().describe('Search query (SQLite FTS5 syntax supported)'), limit: z.number().int().min(1).max(100).default(20).optional() },
+    {
+      description: 'Fulltext search across all notes in the vault',
+      inputSchema: {
+        query: z.string().describe('Search query (SQLite FTS5 syntax supported)'),
+        limit: z.number().int().min(1).max(100).default(20).optional(),
+      },
+    },
     async ({ query, limit }) => {
       const results = searchNotes(db, query, limit ?? 20)
       if (results.length === 0) return { content: [{ type: 'text', text: 'No results found.' }] }
@@ -37,10 +42,14 @@ export async function startServer(db: Database): Promise<void> {
     },
   )
 
-  server.tool(
+  server.registerTool(
     'read_note',
-    'Read the full content of a note by its path or title',
-    { path_or_title: z.string().describe('Exact file path (relative to vault) or note title') },
+    {
+      description: 'Read the full content of a note by its path or title',
+      inputSchema: {
+        path_or_title: z.string().describe('Exact file path (relative to vault) or note title'),
+      },
+    },
     async ({ path_or_title }) => {
       const note = readNote(db, path_or_title)
       if (!note) return { content: [{ type: 'text', text: `Note not found: ${path_or_title}` }] }
@@ -48,12 +57,14 @@ export async function startServer(db: Database): Promise<void> {
     },
   )
 
-  server.tool(
+  server.registerTool(
     'list_notes',
-    'List all notes, optionally filtered by subfolder or tag',
     {
-      folder: z.string().optional().describe('Subfolder path relative to vault root'),
-      tag: z.string().optional().describe('Frontmatter tag to filter by'),
+      description: 'List all notes, optionally filtered by subfolder or tag',
+      inputSchema: {
+        folder: z.string().optional().describe('Subfolder path relative to vault root'),
+        tag: z.string().optional().describe('Frontmatter tag to filter by'),
+      },
     },
     async ({ folder, tag }) => {
       const notes = listNotes(db, { folder, tag })
@@ -63,10 +74,14 @@ export async function startServer(db: Database): Promise<void> {
     },
   )
 
-  server.tool(
+  server.registerTool(
     'get_backlinks',
-    'Find all notes that link to a given note',
-    { path_or_title: z.string().describe('Path or title of the target note') },
+    {
+      description: 'Find all notes that link to a given note',
+      inputSchema: {
+        path_or_title: z.string().describe('Path or title of the target note'),
+      },
+    },
     async ({ path_or_title }) => {
       const links = getBacklinks(db, path_or_title)
       if (links.length === 0)
@@ -76,10 +91,14 @@ export async function startServer(db: Database): Promise<void> {
     },
   )
 
-  server.tool(
+  server.registerTool(
     'search_by_tag',
-    'Find all notes that have a specific frontmatter tag',
-    { tag: z.string().describe('Tag name (without #)') },
+    {
+      description: 'Find all notes that have a specific frontmatter tag',
+      inputSchema: {
+        tag: z.string().describe('Tag name (without #)'),
+      },
+    },
     async ({ tag }) => {
       const notes = searchByTag(db, tag)
       if (notes.length === 0)
