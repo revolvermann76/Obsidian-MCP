@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
-    "start:test": "node dist/index.cjs --vault ./test-vault --db ./test-vault/.mcp-index.db",
+    "start:test": "npm run build && node dist/index.cjs --vault ./test-vault --db ./test-vault/.mcp-index.db",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.cjs --vault ./test-vault --db ./test-vault/.mcp-index.db"
   },
   "repository": {
@@ -27,7 +27,7 @@
   "homepage": "https://github.com/revolvermann76/Obsidian-MCP#readme",
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^26.0.0",
+    "@types/node": "~26.0.0",
     "esbuild": "^0.28.1",
     "prettier": "^3.8.4",
     "typescript": "^6.0.3"
