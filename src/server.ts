@@ -108,6 +108,16 @@ export async function startServer(db: Database): Promise<void> {
     },
   )
 
+  server.registerTool(
+    'exit',
+    { description: 'Shut down the MCP server process.' },
+    async () => {
+      console.error('[server] Shutting down by tool request')
+      setImmediate(() => process.exit(0))
+      return { content: [{ type: 'text', text: 'Server is shutting down.' }] }
+    },
+  )
+
   const transport = new StdioServerTransport()
   await server.connect(transport)
   console.error('[server] MCP server running on stdio')
