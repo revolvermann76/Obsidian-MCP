@@ -16,23 +16,30 @@ import { indexFile, removeFile } from './indexer.js'
  * @param vaultPath - Absolute path to the Obsidian vault root to watch.
  */
 export function watchVault(db: Database, vaultPath: string): void {
-  const watcher = chokidar.watch(`${vaultPath}/**/*.md`, {
+  const watcher = chokidar.watch(vaultPath, {
     ignoreInitial: true,
     ignored: /(^|[/\\])\../,
     persistent: true,
-    awaitWriteFinish: { stabilityThreshold: 300, pollInterval: 100 },
+    awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 100 },
+    usePolling: true,
+    interval: 500,
   })
+
+  const isMd = (p: string) => p.endsWith('.md')
 
   watcher
     .on('add', (path) => {
+      if (!isMd(path)) return
       console.error(`[watcher] Added: ${path}`)
       indexFile(db, vaultPath, path)
     })
     .on('change', (path) => {
+      if (!isMd(path)) return
       console.error(`[watcher] Changed: ${path}`)
       indexFile(db, vaultPath, path)
     })
     .on('unlink', (path) => {
+      if (!isMd(path)) return
       console.error(`[watcher] Deleted: ${path}`)
       removeFile(db, vaultPath, path)
     })
