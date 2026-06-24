@@ -27,7 +27,7 @@ export async function scanVault(db: Database, vaultPath: string): Promise<void> 
 
   const upsert = db.transaction((relPath: string, raw: string, mtime: number) => {
     const parsed = parseNote(raw, relPath)
-    console.log(`[indexer] Indexing ${relPath} (hash: ${parsed.hash})`, JSON.stringify(parsed, null, 2));
+    console.error(`[indexer] Indexing ${relPath} (hash: ${parsed.hash})`, JSON.stringify(parsed, null, 2));
     const existing = existingMap.get(relPath)
 
     if (existing === parsed.hash) return
