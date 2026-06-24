@@ -56,7 +56,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | `src/tools/readTools.ts` | `read_note` | Reading a single note by path, title, or alias |
 | `src/tools/backlinkTools.ts` | `get_backlinks` | Notes linking to a given note |
 | `src/tools/tagTools.ts` | `search_by_tag` | Filtering by tag |
-| `src/tools/aliasTools.ts` | `aliases` | Listing aliases with optional filters |
+| `src/tools/aliasTools.ts` | `list-aliases`, `add-alias` | Listing and adding aliases |
 
 **DB schema:**
 - `notes` — id, path (relative to vault), title, content, content_hash (SHA-1), mtime
@@ -71,7 +71,8 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `list_notes` — list all notes, filterable by `folder` (path prefix) or `tag`
 - `get_backlinks` — find notes linking to a given note (matches by title, path, or alias)
 - `search_by_tag` — find notes by frontmatter tag or inline body tag
-- `aliases` — list aliases; filterable by `file`, `path`; supports `total` (count only) and `verbose` (include paths)
+- `list-aliases` — list aliases; filterable by `file`, `path`; supports `total` (count only) and `verbose` (include paths)
+- `add-alias` — add an alias to a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately
 - `exit` — shut down the MCP server process
 
 **Key design decisions:**
@@ -84,6 +85,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - All server logs go to `stderr` so they don't interfere with the MCP stdio protocol
 - MCP tools are registered with `server.registerTool()` — `server.tool()` is deprecated as of SDK 1.29
 - Each tool module exports a `register*` function; `server.ts` calls them in sequence and contains no query logic itself
+- `startServer` receives `vaultPath` (in addition to `db`) so write-capable tools can resolve absolute file paths
 - Shared types (`Note`, `ParsedNote`) live in `src/types.ts`; `parser.ts` re-exports `ParsedNote` for backwards compatibility
 - chokidar watches the vault directory directly (not a glob pattern) with `usePolling: true` — glob-based watching is unreliable on Windows with chokidar v5
 - Inline tags (`#tag`, `#tag/subtag`) are extracted from the note body and merged with frontmatter tags; subtags are stored as a single flat string

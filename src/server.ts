@@ -22,13 +22,13 @@ import { registerTagTools } from './tools/tagTools.js'
  * @param db - Open SQLite database instance populated by the indexer.
  * @returns A promise that resolves once the server is connected to the stdio transport.
  */
-export async function startServer(db: Database): Promise<void> {
+export async function startServer(db: Database, vaultPath: string): Promise<void> {
   const server = new McpServer({
     name: 'obsidian-mcp',
     version: '1.0.0',
   })
 
-  registerAliasesTools(db, server)
+  registerAliasesTools(db, server, vaultPath)
   registerBacklinkTools(db, server)
   registerReadTools(db, server)
   registerSearchTools(db, server)

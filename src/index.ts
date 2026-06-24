@@ -48,7 +48,7 @@ async function main(): Promise<void> {
 
   await scanVault(db, vaultPath)
   watchVault(db, vaultPath)
-  await startServer(db)
+  await startServer(db, vaultPath)
 }
 
 main().catch((err) => {

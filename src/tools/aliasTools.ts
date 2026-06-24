@@ -1,5 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp'
 import type { Database } from 'better-sqlite3'
+import matter from 'gray-matter'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { z } from 'zod'
 
 /**
@@ -49,9 +52,46 @@ function listAliases(
   return opts.verbose ? rows : rows.map((r) => ({ alias: r.alias }))
 }
 
-export function registerAliasesTools(db: Database, server: McpServer) {
+function addAlias(
+  db: Database,
+  vaultPath: string,
+  noteRef: string,
+  newAlias: string,
+): { success: boolean; message: string } {
+  const note = db
+    .prepare(
+      `SELECT n.id, n.path, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(noteRef, noteRef, noteRef) as { id: number; path: string; title: string } | undefined
+
+  if (!note) return { success: false, message: `Note not found: ${noteRef}` }
+
+  const exists = db.prepare('SELECT 1 FROM aliases WHERE note_id = ? AND alias = ?').get(note.id, newAlias)
+  if (exists) return { success: false, message: `Alias "${newAlias}" already exists on "${note.title}"` }
+
+  const absPath = join(vaultPath, note.path)
+  const raw = readFileSync(absPath, 'utf-8')
+  const { data, content } = matter(raw)
+
+  const current: string[] = Array.isArray(data['aliases'])
+    ? (data['aliases'] as string[])
+    : data['aliases']
+      ? [String(data['aliases'])]
+      : []
+  data['aliases'] = [...current, newAlias]
+
+  writeFileSync(absPath, matter.stringify(content, data), 'utf-8')
+  db.prepare('INSERT INTO aliases (note_id, alias) VALUES (?, ?)').run(note.id, newAlias)
+
+  return { success: true, message: `Added alias "${newAlias}" to "${note.title}"` }
+}
+
+export function registerAliasesTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
-    'aliases',
+    'list-aliases',
     {
       description: 'List aliases defined in the vault, with optional filtering',
       inputSchema: {
@@ -71,6 +111,21 @@ export function registerAliasesTools(db: Database, server: McpServer) {
         .map((r) => (r.path ? `- **${r.alias}** (${r.path})` : `- ${r.alias}`))
         .join('\n')
       return { content: [{ type: 'text', text }] }
+    },
+  )
+
+  server.registerTool(
+    'add-alias',
+    {
+      description: 'Add an alias to a note, identified by its title, existing alias, or path',
+      inputSchema: {
+        note: z.string().describe('Note title, existing alias, or vault-relative path'),
+        alias: z.string().describe('New alias to add'),
+      },
+    },
+    async ({ note, alias }) => {
+      const result = addAlias(db, vaultPath, note, alias)
+      return { content: [{ type: 'text', text: result.message }] }
     },
   )
 }
