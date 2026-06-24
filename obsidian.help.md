@@ -10,40 +10,16 @@ Commands:
     path=<path>         - File path
     total               - Return alias count
     verbose             - Include file paths
-    active              - Show aliases for active file
 
-  append                Append content to a file
-    file=<name>         - File name
-    path=<path>         - File path
-    content=<text>      - Content to append (required)
-    inline              - Append without newline
+  deadends              List files with no outgoing links
+    total               - Return dead-end count
+    all                 - Include non-markdown files
 
   backlinks             List backlinks to a file
     file=<name>         - Target file name
     path=<path>         - Target file path
     counts              - Include link counts
     total               - Return backlink count
-
-
-
-
-  create                Create a new file
-    name=<name>         - File name
-    path=<path>         - File path
-    content=<text>      - Initial content
-    template=<name>     - Template to use
-    overwrite           - Overwrite if file exists
-    open                - Open file after creating
-    newtab              - Open in new tab
-
-  deadends              List files with no outgoing links
-    total               - Return dead-end count
-    all                 - Include non-markdown files
-
-  delete                Delete a file
-    file=<name>         - File name
-    path=<path>         - File path
-    permanent           - Skip trash, delete permanently
 
   file                  Show file info
     file=<name>         - File name
@@ -53,7 +29,6 @@ Commands:
     folder=<path>       - Filter by folder
     ext=<extension>     - Filter by extension
     total               - Return file count
-
   folder                Show folder info
     path=<path>         - Folder path (required)
     info=files|folders|size  - Return specific info only
@@ -67,11 +42,6 @@ Commands:
     path=<path>         - File path
     total               - Return link count
 
-  move                  Move or rename a file
-    file=<name>         - File name
-    path=<path>         - File path
-    to=<path>           - Destination folder or path (required)
-
   orphans               List files with no incoming links
     total               - Return orphan count
     all                 - Include non-markdown files
@@ -81,12 +51,6 @@ Commands:
     path=<path>         - File path
     format=tree|md|json - Output format (default: tree)
     total               - Return heading count
-
-  prepend               Prepend content to a file
-    file=<name>         - File name
-    path=<path>         - File path
-    content=<text>      - Content to prepend (required)
-    inline              - Prepend without newline
 
   properties            List properties in the vault
     file=<name>         - Show properties for file
@@ -103,26 +67,9 @@ Commands:
     file=<name>         - File name
     path=<path>         - File path
 
-  property:remove       Remove a property from a file
-    name=<name>         - Property name (required)
-    file=<name>         - File name
-    path=<path>         - File path
-
-  property:set          Set a property on a file
-    name=<name>         - Property name (required)
-    value=<value>       - Property value (required)
-    type=text|list|number|checkbox|date|datetime  - Property type
-    file=<name>         - File name
-    path=<path>         - File path
-
   read                  Read file contents
     file=<name>         - File name
     path=<path>         - File path
-
-  rename                Rename a file
-    file=<name>         - File name
-    path=<path>         - File path
-    name=<name>         - New file name (required)
 
   search                Search vault for text
     query=<text>        - Search query (required)
@@ -138,9 +85,6 @@ Commands:
     case                - Case sensitive
     format=text|json    - Output format (default: text)
 
-
-
-
   tag                   Get tag info
     name=<tag>          - Tag name (required)
     total               - Return occurrence count
@@ -154,8 +98,55 @@ Commands:
     sort=count          - Sort by count (default: name)
     format=json|tsv|csv - Output format (default: tsv)
     active              - Show tags for active file
+---
 
+  append                Append content to a file
+    file=<name>         - File name
+    path=<path>         - File path
+    content=<text>      - Content to append (required)
+    inline              - Append without newline
 
+  create                Create a new file
+    name=<name>         - File name
+    path=<path>         - File path
+    content=<text>      - Initial content
+    template=<name>     - Template to use
+    overwrite           - Overwrite if file exists
+    open                - Open file after creating
+    newtab              - Open in new tab
+
+  delete                Delete a file
+    file=<name>         - File name
+    path=<path>         - File path
+    permanent           - Skip trash, delete permanently
+
+  move                  Move or rename a file
+    file=<name>         - File name
+    path=<path>         - File path
+    to=<path>           - Destination folder or path (required)
+
+  prepend               Prepend content to a file
+    file=<name>         - File name
+    path=<path>         - File path
+    content=<text>      - Content to prepend (required)
+    inline              - Prepend without newline
+
+  property:remove       Remove a property from a file
+    name=<name>         - Property name (required)
+    file=<name>         - File name
+    path=<path>         - File path
+
+  property:set          Set a property on a file
+    name=<name>         - Property name (required)
+    value=<value>       - Property value (required)
+    type=text|list|number|checkbox|date|datetime  - Property type
+    file=<name>         - File name
+    path=<path>         - File path
+
+  rename                Rename a file
+    file=<name>         - File name
+    path=<path>         - File path
+    name=<name>         - New file name (required)
 
   unresolved            List unresolved links in vault
     total               - Return unresolved link count

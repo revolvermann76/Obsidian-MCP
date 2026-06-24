@@ -1,8 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { z } from 'zod'
 import type { Database } from 'better-sqlite3'
-import { searchNotes, readNote, listNotes, getBacklinks, searchByTag } from './tools.js'
+import { registerSearchTools } from './tools/searchTools.js'
+import { registerReadTools } from './tools/readTools.js'
+import { registerBacklinkTools } from './tools/backlinkTools.js'
+import {  registerAliasesTools } from './tools/aliasTools.js'
+import { registerTagTools } from './tools/tagTools.js'
 
 /**
  * Registers all MCP tools and starts the server on stdio.
@@ -25,88 +28,11 @@ export async function startServer(db: Database): Promise<void> {
     version: '1.0.0',
   })
 
-  server.registerTool(
-    'search_notes',
-    {
-      description: 'Fulltext search across all notes in the vault',
-      inputSchema: {
-        query: z.string().describe('Search query (SQLite FTS5 syntax supported)'),
-        limit: z.number().int().min(1).max(100).default(20).optional(),
-      },
-    },
-    async ({ query, limit }) => {
-      const results = searchNotes(db, query, limit ?? 20)
-      if (results.length === 0) return { content: [{ type: 'text', text: 'No results found.' }] }
-      const text = results.map((r) => `**${r.title}** (${r.path})\n${r.snippet}`).join('\n\n---\n\n')
-      return { content: [{ type: 'text', text }] }
-    },
-  )
-
-  server.registerTool(
-    'read_note',
-    {
-      description: 'Read the full content of a note by its path or title',
-      inputSchema: {
-        path_or_title: z.string().describe('Exact file path (relative to vault) or note title'),
-      },
-    },
-    async ({ path_or_title }) => {
-      const note = readNote(db, path_or_title)
-      if (!note) return { content: [{ type: 'text', text: `Note not found: ${path_or_title}` }] }
-      return { content: [{ type: 'text', text: `# ${note.title}\n\n${note.content}` }] }
-    },
-  )
-
-  server.registerTool(
-    'list_notes',
-    {
-      description: 'List all notes, optionally filtered by subfolder or tag',
-      inputSchema: {
-        folder: z.string().optional().describe('Subfolder path relative to vault root'),
-        tag: z.string().optional().describe('Frontmatter tag to filter by'),
-      },
-    },
-    async ({ folder, tag }) => {
-      const notes = listNotes(db, { folder, tag })
-      if (notes.length === 0) return { content: [{ type: 'text', text: 'No notes found.' }] }
-      const text = notes.map((n) => `- **${n.title}** (${n.path})`).join('\n')
-      return { content: [{ type: 'text', text }] }
-    },
-  )
-
-  server.registerTool(
-    'get_backlinks',
-    {
-      description: 'Find all notes that link to a given note',
-      inputSchema: {
-        path_or_title: z.string().describe('Path or title of the target note'),
-      },
-    },
-    async ({ path_or_title }) => {
-      const links = getBacklinks(db, path_or_title)
-      if (links.length === 0)
-        return { content: [{ type: 'text', text: `No backlinks found for: ${path_or_title}` }] }
-      const text = links.map((n) => `- **${n.title}** (${n.path})`).join('\n')
-      return { content: [{ type: 'text', text }] }
-    },
-  )
-
-  server.registerTool(
-    'search_by_tag',
-    {
-      description: 'Find all notes that have a specific frontmatter tag',
-      inputSchema: {
-        tag: z.string().describe('Tag name (without #)'),
-      },
-    },
-    async ({ tag }) => {
-      const notes = searchByTag(db, tag)
-      if (notes.length === 0)
-        return { content: [{ type: 'text', text: `No notes with tag: ${tag}` }] }
-      const text = notes.map((n) => `- **${n.title}** (${n.path})`).join('\n')
-      return { content: [{ type: 'text', text }] }
-    },
-  )
+  registerAliasesTools(db, server);
+  registerBacklinkTools(db, server)
+  registerReadTools(db, server)
+  registerSearchTools(db, server)
+  registerTagTools(db, server)
 
   server.registerTool(
     'exit',
@@ -117,6 +43,7 @@ export async function startServer(db: Database): Promise<void> {
       return { content: [{ type: 'text', text: 'Server is shutting down.' }] }
     },
   )
+
 
   const transport = new StdioServerTransport()
   await server.connect(transport)
