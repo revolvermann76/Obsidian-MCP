@@ -46,3 +46,8 @@ export function registerReadTools(db: Database, server: McpServer): void {
     },
   )
 }
+
+
+//TODO readTools => noteTools
+//TODO append-note
+//TODO outline-note

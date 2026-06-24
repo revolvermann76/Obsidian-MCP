@@ -91,6 +91,10 @@ function listProperties(
   return rows.map((r) => `- ${r.key}`).join('\n')
 }
 
+//TODO add-property
+//TODO remove-property
+//TODO update-property
+
 /**
  * Registers the `list-properties` MCP tool on the given server.
  *

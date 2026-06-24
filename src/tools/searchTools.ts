@@ -110,3 +110,5 @@ export function registerSearchTools(db: Database, server: McpServer): void {
     },
   )
 }
+
+//TODO consistent naming of tools (- and _)
