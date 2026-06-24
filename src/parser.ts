@@ -24,7 +24,7 @@ const MD_LINK_RE = /\[(?:[^\]]*)\]\(([^)]+\.md)\)/g
 // Matches inline tags like #tag or #tag/subtag. The lookbehind prevents matching
 // hex colours or mid-word hashes. Slash is included to capture subtag paths as
 // a single combined string (e.g. "project/active").
-const INLINE_TAG_RE = /(?<!\w)#([\p{L}\p{N}_\-][\p{L}\p{N}_\-/\p{Extended_Pictographic}]*)/gu
+const INLINE_TAG_RE = /(?<!\w)#([\p{L}\p{N}_\-\p{Extended_Pictographic}][\p{L}\p{N}_\-/\p{Extended_Pictographic}]*)/gu
 
 /**
  * Parses a raw markdown string into a {@link ParsedNote}.
