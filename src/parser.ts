@@ -11,6 +11,8 @@ export interface ParsedNote {
   content: string
   /** Frontmatter tags, normalized to a flat string array. */
   tags: string[]
+  /** Frontmatter aliases under which this note can also be found. */
+  aliases: string[]
   /** All outgoing link targets found in the body (wikilinks and markdown links). */
   links: string[]
   /** SHA-1 hex digest of the raw file content, used for change detection. */
@@ -19,6 +21,10 @@ export interface ParsedNote {
 
 const WIKILINK_RE = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g
 const MD_LINK_RE = /\[(?:[^\]]*)\]\(([^)]+\.md)\)/g
+// Matches inline tags like #tag or #tag/subtag. The lookbehind prevents matching
+// hex colours or mid-word hashes. Slash is included to capture subtag paths as
+// a single combined string (e.g. "project/active").
+const INLINE_TAG_RE = /(?<!\w)#([\p{L}\p{N}_\-][\p{L}\p{N}_\-/\p{Extended_Pictographic}]*)/gu
 
 /**
  * Parses a raw markdown string into a {@link ParsedNote}.
@@ -37,7 +43,12 @@ export function parseNote(raw: string, filePath: string): ParsedNote {
 
   const title = (data['title'] as string | undefined) ?? titleFromPath(filePath)
 
-  const tags = normalizeTags(data['tags'])
+  const frontmatterTags = normalizeTags(data['tags'])
+  const inlineTags: string[] = []
+  for (const match of content.matchAll(INLINE_TAG_RE)) {
+    if (match[1]) inlineTags.push(match[1])
+  }
+  const tags = [...new Set([...frontmatterTags, ...inlineTags])]
 
   const links: string[] = []
   for (const match of content.matchAll(WIKILINK_RE)) {
@@ -49,9 +60,11 @@ export function parseNote(raw: string, filePath: string): ParsedNote {
     if (target) links.push(target.trim())
   }
 
+  const aliases = normalizeAliases(data['aliases'])
+
   const hash = createHash('sha1').update(raw).digest('hex')
 
-  return { title, content, tags, links, hash }
+  return { title, content, tags, aliases, links, hash }
 }
 
 /**
@@ -81,5 +94,12 @@ function normalizeTags(raw: unknown): string[] {
   if (!raw) return []
   if (typeof raw === 'string') return raw.split(/[\s,]+/).filter(Boolean)
   if (Array.isArray(raw)) return raw.flatMap((t) => normalizeTags(t))
+  return []
+}
+
+function normalizeAliases(raw: unknown): string[] {
+  if (!raw) return []
+  if (typeof raw === 'string') return [raw].filter(Boolean)
+  if (Array.isArray(raw)) return raw.map(String).filter(Boolean)
   return []
 }

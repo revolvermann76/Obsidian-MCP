@@ -27,12 +27,14 @@ export async function scanVault(db: Database, vaultPath: string): Promise<void> 
 
   const upsert = db.transaction((relPath: string, raw: string, mtime: number) => {
     const parsed = parseNote(raw, relPath)
+    console.log(`[indexer] Indexing ${relPath} (hash: ${parsed.hash})`, JSON.stringify(parsed, null, 2));
     const existing = existingMap.get(relPath)
 
     if (existing === parsed.hash) return
 
     const noteId = upsertNote(db, relPath, parsed, mtime)
     upsertTags(db, noteId, parsed.tags)
+    upsertAliases(db, noteId, parsed.aliases)
     upsertLinks(db, noteId, parsed.links)
   })
 
@@ -76,6 +78,7 @@ export function indexFile(db: Database, vaultPath: string, absPath: string): voi
     const parsed = parseNote(raw, relPath)
     const noteId = upsertNote(db, relPath, parsed, Math.floor(fileStat.mtimeMs))
     upsertTags(db, noteId, parsed.tags)
+    upsertAliases(db, noteId, parsed.aliases)
     upsertLinks(db, noteId, parsed.links)
   } catch (err) {
     console.error(`[indexer] Failed to index ${relPath}:`, err)
@@ -142,6 +145,14 @@ function upsertTags(db: Database, noteId: number, tags: string[]): void {
   const insert = db.prepare('INSERT INTO tags (note_id, tag) VALUES (?, ?)')
   for (const tag of tags) {
     insert.run(noteId, tag)
+  }
+}
+
+function upsertAliases(db: Database, noteId: number, aliases: string[]): void {
+  db.prepare('DELETE FROM aliases WHERE note_id = ?').run(noteId)
+  const insert = db.prepare('INSERT INTO aliases (note_id, alias) VALUES (?, ?)')
+  for (const alias of aliases) {
+    insert.run(noteId, alias)
   }
 }
 

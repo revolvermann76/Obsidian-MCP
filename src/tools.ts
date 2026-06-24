@@ -51,8 +51,13 @@ export function searchNotes(
  */
 export function readNote(db: Database, pathOrTitle: string): Note | undefined {
   return (db
-    .prepare('SELECT id, path, title, content FROM notes WHERE path = ? OR title = ? LIMIT 1')
-    .get(pathOrTitle, pathOrTitle) as Note | undefined)
+    .prepare(
+      `SELECT n.id, n.path, n.title, n.content FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(pathOrTitle, pathOrTitle, pathOrTitle) as Note | undefined)
 }
 
 /**

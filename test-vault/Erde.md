@@ -5,6 +5,7 @@ tags:
   - inneres-sonnensystem
   - leben
   - astronomie
+aliases: ["Terra", "Gaia"]
 ---
 
 # Die Erde
@@ -37,3 +38,5 @@ Die Erde liegt zwischen [[Venus]] (innerer Nachbar) und [[Mars]] (äußerer Nach
 ## Der Mond
 
 Der Mond ist der einzige natürliche Satellit der Erde. Er beeinflusst die Gezeiten und wurde möglicherweise durch einen Einschlag eines marsgroßen Protoplaneten (Theia) geformt.
+
+#like

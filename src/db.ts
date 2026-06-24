@@ -34,6 +34,12 @@ export function openDatabase(dbPath: string): DB {
       PRIMARY KEY (note_id, tag)
     );
 
+    CREATE TABLE IF NOT EXISTS aliases (
+      note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      alias   TEXT    NOT NULL,
+      PRIMARY KEY (note_id, alias)
+    );
+
     CREATE TABLE IF NOT EXISTS links (
       source_id   INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
       target_path TEXT    NOT NULL
