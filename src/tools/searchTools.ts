@@ -38,9 +38,10 @@ function listNotes(
       .prepare(`SELECT path, title FROM notes WHERE path LIKE ? ORDER BY path`)
       .all(`${opts.folder}/%`) as { path: string; title: string }[]
   }
-  return db
-    .prepare('SELECT path, title FROM notes ORDER BY path')
-    .all() as { path: string; title: string }[]
+  return db.prepare('SELECT path, title FROM notes ORDER BY path').all() as {
+    path: string
+    title: string
+  }[]
 }
 
 export function registerSearchTools(db: Database, server: McpServer): void {
@@ -56,7 +57,9 @@ export function registerSearchTools(db: Database, server: McpServer): void {
     async ({ query, limit }) => {
       const results = searchNotes(db, query, limit ?? 20)
       if (results.length === 0) return { content: [{ type: 'text', text: 'No results found.' }] }
-      const text = results.map((r) => `**${r.title}** (${r.path})\n${r.snippet}`).join('\n\n---\n\n')
+      const text = results
+        .map((r) => `**${r.title}** (${r.path})\n${r.snippet}`)
+        .join('\n\n---\n\n')
       return { content: [{ type: 'text', text }] }
     },
   )

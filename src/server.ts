@@ -4,7 +4,7 @@ import type { Database } from 'better-sqlite3'
 import { registerSearchTools } from './tools/searchTools.js'
 import { registerReadTools } from './tools/readTools.js'
 import { registerBacklinkTools } from './tools/backlinkTools.js'
-import {  registerAliasesTools } from './tools/aliasTools.js'
+import { registerAliasesTools } from './tools/aliasTools.js'
 import { registerTagTools } from './tools/tagTools.js'
 
 /**
@@ -28,22 +28,17 @@ export async function startServer(db: Database): Promise<void> {
     version: '1.0.0',
   })
 
-  registerAliasesTools(db, server);
+  registerAliasesTools(db, server)
   registerBacklinkTools(db, server)
   registerReadTools(db, server)
   registerSearchTools(db, server)
   registerTagTools(db, server)
 
-  server.registerTool(
-    'exit',
-    { description: 'Shut down the MCP server process.' },
-    async () => {
-      console.error('[server] Shutting down by tool request')
-      setImmediate(() => process.exit(0))
-      return { content: [{ type: 'text', text: 'Server is shutting down.' }] }
-    },
-  )
-
+  server.registerTool('exit', { description: 'Shut down the MCP server process.' }, async () => {
+    console.error('[server] Shutting down by tool request')
+    setImmediate(() => process.exit(0))
+    return { content: [{ type: 'text', text: 'Server is shutting down.' }] }
+  })
 
   const transport = new StdioServerTransport()
   await server.connect(transport)

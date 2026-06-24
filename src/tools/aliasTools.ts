@@ -1,8 +1,6 @@
-
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp'
 import type { Database } from 'better-sqlite3'
 import { z } from 'zod'
-
 
 /**
  * Lists aliases stored in the vault, with optional filtering and output modes.
@@ -51,30 +49,28 @@ function listAliases(
   return opts.verbose ? rows : rows.map((r) => ({ alias: r.alias }))
 }
 
-
 export function registerAliasesTools(db: Database, server: McpServer) {
-      server.registerTool(
-        'aliases',
-        {
-          description: 'List aliases defined in the vault, with optional filtering',
-          inputSchema: {
-            file: z.string().optional().describe('Filter by exact note title'),
-            path: z.string().optional().describe('Filter by path prefix (relative to vault)'),
-            total: z.boolean().optional().describe('Return only the total alias count'),
-            verbose: z.boolean().optional().describe('Include file paths in the result'),
-          },
-        },
-        async ({ file, path, total, verbose }) => {
-          const result = listAliases(db, { file, path, total, verbose })
-          if (typeof result === 'number') {
-            return { content: [{ type: 'text', text: `Total aliases: ${result}` }] }
-          }
-          if (result.length === 0) return { content: [{ type: 'text', text: 'No aliases found.' }] }
-          const text = result
-            .map((r) => (r.path ? `- **${r.alias}** (${r.path})` : `- ${r.alias}`))
-            .join('\n')
-          return { content: [{ type: 'text', text }] }
-        },
-      )
-    
+  server.registerTool(
+    'aliases',
+    {
+      description: 'List aliases defined in the vault, with optional filtering',
+      inputSchema: {
+        file: z.string().optional().describe('Filter by exact note title'),
+        path: z.string().optional().describe('Filter by path prefix (relative to vault)'),
+        total: z.boolean().optional().describe('Return only the total alias count'),
+        verbose: z.boolean().optional().describe('Include file paths in the result'),
+      },
+    },
+    async ({ file, path, total, verbose }) => {
+      const result = listAliases(db, { file, path, total, verbose })
+      if (typeof result === 'number') {
+        return { content: [{ type: 'text', text: `Total aliases: ${result}` }] }
+      }
+      if (result.length === 0) return { content: [{ type: 'text', text: 'No aliases found.' }] }
+      const text = result
+        .map((r) => (r.path ? `- **${r.alias}** (${r.path})` : `- ${r.alias}`))
+        .join('\n')
+      return { content: [{ type: 'text', text }] }
+    },
+  )
 }
