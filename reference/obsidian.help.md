@@ -6,14 +6,12 @@ Notes:
 
 Commands:
 
-  file                  Show file info
-    file=<name>         - File name
-    path=<path>         - File path
 
   files                 List files in the vault
     folder=<path>       - Filter by folder
     ext=<extension>     - Filter by extension
     total               - Return file count
+
   folder                Show folder info
     path=<path>         - Folder path (required)
     info=files|folders|size  - Return specific info only
@@ -26,10 +24,6 @@ Commands:
     file=<name>         - File name
     path=<path>         - File path
     total               - Return link count
-
-  orphans               List files with no incoming links
-    total               - Return orphan count
-    all                 - Include non-markdown files
 
   search                Search vault for text
     query=<text>        - Search query (required)
@@ -100,14 +94,6 @@ Commands:
     total               - Return unresolved link count
     counts              - Include link counts
     verbose             - Include source files
-    format=json|tsv|csv - Output format (default: tsv)
 
-  wordcount             Count words and characters
-    file=<name>         - File name
-    path=<path>         - File path
-    words               - Return word count only
-    characters          - Return character count only
 
-  workspace             Show workspace tree
-    ids                 - Include workspace item IDs
 
