@@ -5,10 +5,11 @@ tags:
   - inneres-sonnensystem
   - astronomie
   - raumfahrt
-aliases: ["Red Planet", "der Rote"]
-related:
-  - "[[Erde]]"
-  - "[[Sonne]]"
+aliases:
+  - Red Planet
+  - der Rote
+  - Whatever
+related: '[[Erde]]'
 ---
 
 # Mars

@@ -112,6 +112,27 @@ function infoNote(db: Database, pathOrTitle: string): string {
   return lines.join('\n')
 }
 
+function formatYamlValue(json: string): string {
+  try {
+    const v = JSON.parse(json) as unknown
+    if (v === null) return 'null'
+    if (typeof v === 'boolean' || typeof v === 'number') return String(v)
+    if (Array.isArray(v)) return `[${v.map(String).join(', ')}]`
+    const s = String(v)
+    return /[:#\[\]{}&*!|>'"@`]/.test(s) || s.includes('\n') ? `"${s.replace(/"/g, '\\"')}"` : s
+  } catch {
+    return json
+  }
+}
+
+function buildFrontmatter(db: Database, noteId: number): string {
+  const rows = db
+    .prepare('SELECT key, value FROM properties WHERE note_id = ? ORDER BY key')
+    .all(noteId) as { key: string; value: string }[]
+  if (rows.length === 0) return ''
+  return `---\n${rows.map((r) => `${r.key}: ${formatYamlValue(r.value)}`).join('\n')}\n---`
+}
+
 /**
  * Extracts the heading structure from a note's content.
  *
@@ -138,19 +159,28 @@ function outlineNote(db: Database, pathOrTitle: string): string {
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tool on.
  */
-export function registerReadTools(db: Database, server: McpServer): void {
+export function registerNoteTools(db: Database, server: McpServer): void {
   server.registerTool(
     'read_note',
     {
       description: 'Read the full content of a note by its path or title',
       inputSchema: {
-        path_or_title: z.string().describe('Exact file path (relative to vault) or note title'),
+        path_or_title: z.string().describe('Vault-relative path, note title, or alias'),
+        show_filename: z.boolean().optional().describe('Prepend the vault-relative file path (default: false)'),
+        show_frontmatter: z.boolean().optional().describe('Prepend the reconstructed YAML frontmatter block (default: false)'),
       },
     },
-    async ({ path_or_title }) => {
+    async ({ path_or_title, show_filename, show_frontmatter }) => {
       const note = readNote(db, path_or_title)
       if (!note) return { content: [{ type: 'text', text: `Note not found: ${path_or_title}` }] }
-      return { content: [{ type: 'text', text: `# ${note.title}\n\n${note.content}` }] }
+      const parts: string[] = []
+      if (show_filename) parts.push(note.path)
+      if (show_frontmatter) {
+        const fm = buildFrontmatter(db, note.id)
+        if (fm) parts.push(fm)
+      }
+      parts.push(note.content)
+      return { content: [{ type: 'text', text: parts.join('\n\n') }] }
     },
   )
 

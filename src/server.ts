@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Database } from 'better-sqlite3'
 import { registerSearchTools } from './tools/searchTools.js'
-import { registerReadTools } from './tools/noteTools.js'
+import { registerNoteTools } from './tools/noteTools.js'
 import { registerBacklinkTools } from './tools/backlinkTools.js'
 import { registerAliasesTools } from './tools/aliasTools.js'
 import { registerTagTools } from './tools/tagTools.js'
@@ -33,7 +33,7 @@ export async function startServer(db: Database, vaultPath: string): Promise<void
   registerAliasesTools(db, server, vaultPath)
   registerPropertyTools(db, server, vaultPath)
   registerBacklinkTools(db, server)
-  registerReadTools(db, server)
+  registerNoteTools(db, server)
   registerSearchTools(db, server)
   registerTagTools(db, server)
   registerFolderTools(db, server)

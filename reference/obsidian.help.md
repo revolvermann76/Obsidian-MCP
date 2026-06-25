@@ -5,21 +5,6 @@ Notes:
   Use \n for newline, \t for tab in content values
 
 Commands:
-  aliases               List aliases in the vault
-    file=<name>         - File name
-    path=<path>         - File path
-    total               - Return alias count
-    verbose             - Include file paths
-
-  deadends              List files with no outgoing links
-    total               - Return dead-end count
-    all                 - Include non-markdown files
-
-  backlinks             List backlinks to a file
-    file=<name>         - Target file name
-    path=<path>         - Target file path
-    counts              - Include link counts
-    total               - Return backlink count
 
   file                  Show file info
     file=<name>         - File name
@@ -46,26 +31,6 @@ Commands:
     total               - Return orphan count
     all                 - Include non-markdown files
 
-  outline               Show headings for the current file
-    file=<name>         - File name
-    path=<path>         - File path
-    format=tree|md|json - Output format (default: tree)
-    total               - Return heading count
-
-  properties            List properties in the vault
-    file=<name>         - Show properties for file
-    path=<path>         - Show properties for path
-    name=<name>         - Get specific property
-
-  property:read         Read a property value from a file
-    name=<name>         - Property name (required)
-    file=<name>         - File name
-    path=<path>         - File path
-
-  read                  Read file contents
-    file=<name>         - File name
-    path=<path>         - File path
-
   search                Search vault for text
     query=<text>        - Search query (required)
     path=<folder>       - Limit to folder
@@ -80,19 +45,7 @@ Commands:
     case                - Case sensitive
     format=text|json    - Output format (default: text)
 
-  tag                   Get tag info
-    name=<tag>          - Tag name (required)
-    total               - Return occurrence count
-    verbose             - Include file list and count
 
-  tags                  List tags in the vault
-    file=<name>         - File name
-    path=<path>         - File path
-    total               - Return tag count
-    counts              - Include tag counts
-    sort=count          - Sort by count (default: name)
-    format=json|tsv|csv - Output format (default: tsv)
-    active              - Show tags for active file
 ---
 
   append                Append content to a file
