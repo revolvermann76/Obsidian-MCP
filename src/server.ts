@@ -35,12 +35,12 @@ export async function startServer(db: Database, vaultPath: string): Promise<void
   registerBacklinkTools(db, server)
   registerNoteTools(db, server)
   registerSearchTools(db, server)
-  registerTagTools(db, server)
+  registerTagTools(db, server, vaultPath)
   registerFolderTools(db, server)
 
   server.registerTool('exit', { description: 'Shut down the MCP server process.' }, async () => {
     console.error('[server] Shutting down by tool request')
-    setImmediate(() => process.exit(0))
+    setTimeout(() => process.exit(0), 500)
     return { content: [{ type: 'text', text: 'Server is shutting down.' }] }
   })
 

@@ -105,6 +105,58 @@ Returns `No notes with tag: <tag>` when nothing matches.
 
 ---
 
+### `list_tags`
+
+Lists all unique tags across the vault with the number of notes each tag appears on.
+
+Takes no parameters.
+
+**Result:**
+```
+- project (12)
+- active (7)
+- work (3)
+```
+Returns `No tags found.` when the vault has no tags.
+
+---
+
+### `add_tag`
+
+Adds a tag to a note's frontmatter. Updates the file on disk and inserts the tag into the database immediately. Fails without making changes if the tag already exists on the note.
+
+| Parameter | Type   | Required | Description                                                    |
+| --------- | ------ | -------- | -------------------------------------------------------------- |
+| `note`    | string | yes      | Note to target: vault-relative path, title, or existing alias. |
+| `tag`     | string | yes      | Tag to add (without leading `#`).                              |
+
+**Result:** Human-readable confirmation or error message, e.g.:
+- `Added tag "project" to "Note Title"`
+- `Note not found: <input>`
+- `Tag "project" already exists on "Note Title"`
+
+---
+
+### `remove_tag`
+
+Removes a frontmatter tag from a note. Updates the file on disk and deletes the tag from the database immediately. If the `tags` list becomes empty after removal, the `tags` key is dropped from the frontmatter entirely.
+
+**Note:** Only frontmatter tags can be removed. Inline body tags (`#tag` in the note body) require manual editing.
+
+| Parameter | Type   | Required | Description                                                    |
+| --------- | ------ | -------- | -------------------------------------------------------------- |
+| `note`    | string | yes      | Note to target: vault-relative path, title, or existing alias. |
+| `tag`     | string | yes      | Tag to remove (without leading `#`).                           |
+
+**Result:** Human-readable confirmation or error message, e.g.:
+- `Removed tag "project" from "Note Title"`
+- `Note not found: <input>`
+- `Tag "project" not found on "Note Title"`
+- `Tag "project" is an inline body tag on "Note Title" and cannot be removed via this tool`
+
+---
+
+
 ### `deadends`
 
 Lists all notes that have no outgoing links — neither wikilinks nor markdown links. Useful for finding isolated notes that don't connect to the rest of the vault.

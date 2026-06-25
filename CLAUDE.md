@@ -60,7 +60,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | `src/tools/searchTools.ts` | `search_notes`, `list_notes`, `deadends`, `orphans`, `alones` | Finding sets of notes |
 | `src/tools/noteTools.ts` | `read_note`, `info_note`, `outline_note` | Reading a single note, its metadata, and heading structure |
 | `src/tools/backlinkTools.ts` | `get_backlinks` | Notes linking to a given note |
-| `src/tools/tagTools.ts` | `search_by_tag` | Filtering by tag |
+| `src/tools/tagTools.ts` | `search_by_tag`, `list_tags`, `add_tag`, `remove_tag` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `sub_folders`, `info_folder` | Listing vault folder structure and folder metadata |
 | `src/tools/aliasTools.ts` | `list-aliases`, `add-alias`, `remove-alias` | Listing, adding, and removing aliases |
 | `src/tools/propertyTools.ts` | `list_properties`, `add_property`, `remove_property` | Listing, adding, and removing frontmatter properties |
@@ -86,6 +86,9 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `deadends` — list all notes that have no outgoing links (wikilinks or MD links)
 - `get_backlinks` — find notes linking to a given note (matches by title, path, or alias)
 - `search_by_tag` — find notes by frontmatter tag or inline body tag
+- `list_tags` — list all unique tags in the vault with their note counts
+- `add_tag` — add a tag to a note's frontmatter by title, alias, or path; updates disk and DB immediately
+- `remove_tag` — remove a frontmatter tag from a note; drops `tags` key if list becomes empty; inline body tags cannot be removed via this tool
 - `list_aliases` — list aliases; filterable by `file`, `path`; supports `total` (count only) and `verbose` (include paths)
 - `add_alias` — add an alias to a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately
 - `remove_alias` — remove an alias from a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately; drops the `aliases` key entirely if the list becomes empty
