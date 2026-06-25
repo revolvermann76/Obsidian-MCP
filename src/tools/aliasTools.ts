@@ -167,7 +167,7 @@ function removeAlias(
  */
 export function registerAliasesTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
-    'list-aliases',
+    'list_aliases',
     {
       description: 'List aliases defined in the vault, with optional filtering',
       inputSchema: {
@@ -191,7 +191,7 @@ export function registerAliasesTools(db: Database, server: McpServer, vaultPath:
   )
 
   server.registerTool(
-    'add-alias',
+    'add_alias',
     {
       description: 'Add an alias to a note, identified by its title, existing alias, or path',
       inputSchema: {
@@ -206,7 +206,7 @@ export function registerAliasesTools(db: Database, server: McpServer, vaultPath:
   )
 
   server.registerTool(
-    'remove-alias',
+    'remove_alias',
     {
       description: 'Remove an alias from a note, identified by its title, existing alias, or path',
       inputSchema: {

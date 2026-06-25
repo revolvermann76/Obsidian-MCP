@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Database } from 'better-sqlite3'
 import { z } from 'zod'
-import { readNote } from './readTools.js'
+import { readNote } from './noteTools.js'
 
 /**
  * Finds all notes that contain a wikilink or markdown link pointing to the given note.

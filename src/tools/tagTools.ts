@@ -48,3 +48,4 @@ export function registerTagTools(db: Database, server: McpServer): void {
 
 //TODO add-tag
 //TODO remove-tag
+//TODO list-tags

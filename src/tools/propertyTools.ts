@@ -1,5 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp'
 import type { Database } from 'better-sqlite3'
+import matter from 'gray-matter'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { z } from 'zod'
 
 /**
@@ -91,19 +94,153 @@ function listProperties(
   return rows.map((r) => `- ${r.key}`).join('\n')
 }
 
-//TODO add-property
-//TODO remove-property
-//TODO update-property
+type PropertyType = 'text' | 'number' | 'boolean' | 'list' | 'date' | 'json'
+
+function parsePropertyValue(
+  raw: string,
+  type: PropertyType,
+): { yaml: unknown; dbJson: string } | { error: string } {
+  switch (type) {
+    case 'text':
+    case 'date':
+      return { yaml: raw, dbJson: JSON.stringify(raw) }
+    case 'number': {
+      const n = Number(raw)
+      if (isNaN(n)) return { error: `"${raw}" is not a valid number` }
+      return { yaml: n, dbJson: JSON.stringify(n) }
+    }
+    case 'boolean':
+      if (raw !== 'true' && raw !== 'false')
+        return { error: `"${raw}" is not a valid boolean — use "true" or "false"` }
+      return { yaml: raw === 'true', dbJson: raw }
+    case 'list': {
+      const items = raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+      return { yaml: items, dbJson: JSON.stringify(items) }
+    }
+    case 'json': {
+      try {
+        const parsed = JSON.parse(raw) as unknown
+        return { yaml: parsed, dbJson: JSON.stringify(parsed) }
+      } catch {
+        return { error: `"${raw}" is not valid JSON` }
+      }
+    }
+  }
+}
 
 /**
- * Registers the `list-properties` MCP tool on the given server.
+ * Adds a new frontmatter property to a note, updating both the file on disk and the database.
+ *
+ * The note is resolved by vault-relative path, title, or alias. The raw string value is
+ * coerced to the requested type before writing. Returns an error result (without throwing)
+ * if the note is not found, the property already exists, or the value cannot be parsed.
  *
  * @param db - Open SQLite database instance.
- * @param server - MCP server instance to register the tool on.
+ * @param vaultPath - Absolute path to the vault root.
+ * @param noteRef - Note identifier: vault-relative path, title, or alias.
+ * @param key - Frontmatter key to add.
+ * @param rawValue - Raw string value to coerce.
+ * @param type - Target type for coercion.
+ * @returns Object with `success` flag and a human-readable `message`.
  */
-export function registerPropertyTools(db: Database, server: McpServer) {
+function addProperty(
+  db: Database,
+  vaultPath: string,
+  noteRef: string,
+  key: string,
+  rawValue: string,
+  type: PropertyType,
+): { success: boolean; message: string } {
+  const note = db
+    .prepare(
+      `SELECT n.id, n.path, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(noteRef, noteRef, noteRef) as { id: number; path: string; title: string } | undefined
+
+  if (!note) return { success: false, message: `Note not found: ${noteRef}` }
+
+  const alreadyExists = db
+    .prepare('SELECT 1 FROM properties WHERE note_id = ? AND key = ?')
+    .get(note.id, key)
+  if (alreadyExists) return { success: false, message: `Property "${key}" already exists in "${note.title}"` }
+
+  const parsed = parsePropertyValue(rawValue, type)
+  if ('error' in parsed) return { success: false, message: parsed.error }
+
+  const absPath = join(vaultPath, note.path)
+  const raw = readFileSync(absPath, 'utf-8')
+  const { data, content } = matter(raw)
+
+  data[key] = parsed.yaml
+
+  writeFileSync(absPath, matter.stringify(content, data), 'utf-8')
+  db.prepare('INSERT INTO properties (note_id, key, value) VALUES (?, ?, ?)').run(note.id, key, parsed.dbJson)
+
+  return { success: true, message: `Added property "${key}" to "${note.title}"` }
+}
+
+/**
+ * Removes a frontmatter property from a note, updating both the file on disk and the database.
+ *
+ * The note is resolved by vault-relative path, title, or alias.
+ * Returns an error result (without throwing) if the note or property is not found.
+ *
+ * @param db - Open SQLite database instance.
+ * @param vaultPath - Absolute path to the vault root.
+ * @param noteRef - Note identifier: vault-relative path, title, or alias.
+ * @param key - Frontmatter key to remove.
+ * @returns Object with `success` flag and a human-readable `message`.
+ */
+function removeProperty(
+  db: Database,
+  vaultPath: string,
+  noteRef: string,
+  key: string,
+): { success: boolean; message: string } {
+  const note = db
+    .prepare(
+      `SELECT n.id, n.path, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(noteRef, noteRef, noteRef) as { id: number; path: string; title: string } | undefined
+
+  if (!note) return { success: false, message: `Note not found: ${noteRef}` }
+
+  const exists = db
+    .prepare('SELECT 1 FROM properties WHERE note_id = ? AND key = ?')
+    .get(note.id, key)
+  if (!exists) return { success: false, message: `Property "${key}" not found in "${note.title}"` }
+
+  const absPath = join(vaultPath, note.path)
+  const raw = readFileSync(absPath, 'utf-8')
+  const { data, content } = matter(raw)
+
+  delete data[key]
+
+  writeFileSync(absPath, matter.stringify(content, data), 'utf-8')
+  db.prepare('DELETE FROM properties WHERE note_id = ? AND key = ?').run(note.id, key)
+
+  return { success: true, message: `Removed property "${key}" from "${note.title}"` }
+}
+
+/**
+ * Registers the `list_properties`, `add_property`, and `remove_property` MCP tools on the given server.
+ *
+ * @param db - Open SQLite database instance.
+ * @param server - MCP server instance to register the tools on.
+ * @param vaultPath - Absolute path to the vault root, required for on-disk frontmatter writes.
+ */
+export function registerPropertyTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
-    'list-properties',
+    'list_properties',
     {
       description:
         'List frontmatter properties indexed from the vault. ' +
@@ -119,6 +256,46 @@ export function registerPropertyTools(db: Database, server: McpServer) {
     async ({ file, path, name }) => {
       const text = listProperties(db, { file, path, name })
       return { content: [{ type: 'text', text }] }
+    },
+  )
+
+  server.registerTool(
+    'add_property',
+    {
+      description:
+        'Add a frontmatter property to a note, updating both disk and the database. ' +
+        'Fails if the property already exists.',
+      inputSchema: {
+        note: z.string().describe('Note title, existing alias, or vault-relative path'),
+        name: z.string().describe('Frontmatter key to add'),
+        value: z.string().describe('Value as a string; coerced according to type'),
+        type: z
+          .enum(['text', 'number', 'boolean', 'list', 'date', 'json'])
+          .default('text')
+          .describe(
+            'Value type: text (default), number, boolean (true/false), ' +
+              'list (comma-separated → array), date (YYYY-MM-DD), json (raw JSON string)',
+          ),
+      },
+    },
+    async ({ note, name, value, type }) => {
+      const result = addProperty(db, vaultPath, note, name, value, type)
+      return { content: [{ type: 'text', text: result.message }] }
+    },
+  )
+
+  server.registerTool(
+    'remove_property',
+    {
+      description: 'Remove a frontmatter property from a note, updating both disk and the database',
+      inputSchema: {
+        note: z.string().describe('Note title, existing alias, or vault-relative path'),
+        name: z.string().describe('Frontmatter key to remove'),
+      },
+    },
+    async ({ note, name }) => {
+      const result = removeProperty(db, vaultPath, note, name)
+      return { content: [{ type: 'text', text: result.message }] }
     },
   )
 }

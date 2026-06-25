@@ -2,11 +2,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { Database } from 'better-sqlite3'
 import { registerSearchTools } from './tools/searchTools.js'
-import { registerReadTools } from './tools/readTools.js'
+import { registerReadTools } from './tools/noteTools.js'
 import { registerBacklinkTools } from './tools/backlinkTools.js'
 import { registerAliasesTools } from './tools/aliasTools.js'
 import { registerTagTools } from './tools/tagTools.js'
 import { registerPropertyTools } from './tools/propertyTools.js'
+import { registerFolderTools } from './tools/folderTools.js'
 
 /**
  * Registers all MCP tools and starts the server on stdio.
@@ -30,11 +31,12 @@ export async function startServer(db: Database, vaultPath: string): Promise<void
   })
 
   registerAliasesTools(db, server, vaultPath)
-  registerPropertyTools(db, server)
+  registerPropertyTools(db, server, vaultPath)
   registerBacklinkTools(db, server)
   registerReadTools(db, server)
   registerSearchTools(db, server)
   registerTagTools(db, server)
+  registerFolderTools(db, server)
 
   server.registerTool('exit', { description: 'Shut down the MCP server process.' }, async () => {
     console.error('[server] Shutting down by tool request')

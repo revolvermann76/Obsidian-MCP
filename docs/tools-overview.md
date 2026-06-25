@@ -9,6 +9,49 @@ Note resolution — wherever a tool accepts a note reference by `file`, `path`, 
 
 ---
 
+## Folder Structure
+
+### `sub_folders`
+
+Lists subfolders of a vault folder, derived from the indexed note paths (no filesystem access). A folder is considered to exist if at least one note lives inside it.
+
+| Parameter   | Type    | Required | Description                                                                              |
+| ----------- | ------- | -------- | ---------------------------------------------------------------------------------------- |
+| `folder`    | string  | no       | Vault-relative folder path (e.g. `projects`). Defaults to the vault root.                |
+| `recursive` | boolean | no       | When `true`, return all descendant folders. When `false` (default), only direct children. |
+
+**Result:** Bullet list of folder paths:
+```
+- projects
+- projects/work
+- projects/personal
+```
+Returns `No subfolders found.` when the folder contains no subfolders.
+
+---
+
+### `info_folder`
+
+Returns a metadata summary for a vault folder. Without a `folder` parameter, reports on the vault root.
+
+| Parameter | Type   | Required | Description                                                                |
+| --------- | ------ | -------- | -------------------------------------------------------------------------- |
+| `folder`  | string | no       | Vault-relative folder path (e.g. `projects`). Defaults to the vault root. |
+
+**Result:**
+```
+folder:           projects/work
+notes (direct):   3
+notes (total):    12
+subfolders:       projects/work/design, projects/work/backend
+total subfolders: 5
+words (total):    8432
+tags:             active, project, work
+```
+`notes (direct)` counts only notes at the top level of the folder; `notes (total)` includes all descendants. `subfolders` lists direct children by full vault-relative path.
+
+---
+
 ## Searching & Listing
 
 ### `search_notes`
@@ -62,6 +105,34 @@ Returns `No notes with tag: <tag>` when nothing matches.
 
 ---
 
+### `deadends`
+
+Lists all notes that have no outgoing links — neither wikilinks nor markdown links. Useful for finding isolated notes that don't connect to the rest of the vault.
+
+Takes no parameters.
+
+**Result:** Bullet list of matching notes:
+```
+- **Title** (path/to/note.md)
+```
+Returns `No dead-end notes found.` when all notes have at least one outgoing link.
+
+---
+
+### `alones`
+
+Lists all notes that are completely disconnected from the vault — no incoming links (orphan) and no outgoing links (dead end).
+
+Takes no parameters.
+
+**Result:** Bullet list of matching notes:
+```
+- **Title** (path/to/note.md)
+```
+Returns `No alone notes found.` when every note has at least one link in either direction.
+
+---
+
 ## Reading
 
 ### `read_note`
@@ -79,6 +150,66 @@ Reads the full content of a single note. Resolves the note by path, title, or al
 ...full note content...
 ```
 Returns `Note not found: <input>` when no match is found.
+
+---
+
+### `info_note`
+
+Returns a metadata summary for a single note.
+
+| Parameter       | Type   | Required | Description                                |
+| --------------- | ------ | -------- | ------------------------------------------ |
+| `path_or_title` | string | yes      | Vault-relative path, note title, or alias. |
+
+**Result:**
+```
+title:          My Note
+path:           folder/my-note.md
+modified:       2026-01-15 10:30:00 UTC
+size:           1234 bytes
+words:          456
+outgoing links: 3
+backlinks:      7
+aliases:        my alias, other alias
+tags:           project, work
+properties:
+  date: 2026-01-15
+  status: active
+```
+`aliases` and `tags` are listed separately; the `properties` block shows all other frontmatter keys. Returns `Note not found: <input>` when no match is found.
+
+---
+
+### `outline_note`
+
+Returns the heading structure (H1–H6) of a note as a flat list of heading lines, preserving the `#` prefix so the hierarchy is visible.
+
+| Parameter       | Type   | Required | Description                                |
+| --------------- | ------ | -------- | ------------------------------------------ |
+| `path_or_title` | string | yes      | Vault-relative path, note title, or alias. |
+
+**Result:**
+```
+# Headline
+## Sub Headline
+### Sub Sub Headline
+## Second Sub Headline
+```
+Returns `No headings found in "<title>"` when the note has no headings, or `Note not found: <input>` when no match is found.
+
+---
+
+### `orphans`
+
+Lists all notes that no other note links to — neither by vault-relative path nor by title. Useful for finding notes that are completely disconnected from the rest of the vault.
+
+Takes no parameters.
+
+**Result:** Bullet list of matching notes:
+```
+- **Title** (path/to/note.md)
+```
+Returns `No orphan notes found.` when every note is linked to by at least one other note.
 
 ---
 
@@ -102,7 +233,7 @@ Returns `No backlinks found for: <input>` when nothing links to the target.
 
 ## Aliases
 
-### `list-aliases`
+### `list_aliases`
 
 Lists aliases defined across the vault, with optional filtering and output modes.
 
@@ -127,7 +258,7 @@ Returns `No aliases found.` when the filter matches nothing.
 
 ---
 
-### `add-alias`
+### `add_alias`
 
 Adds a new alias to a note. Updates the frontmatter `aliases` key on disk and records the alias in the database immediately. Fails without making changes if the alias already exists on the note.
 
@@ -143,7 +274,7 @@ Adds a new alias to a note. Updates the frontmatter `aliases` key on disk and re
 
 ---
 
-### `remove-alias`
+### `remove_alias`
 
 Removes an alias from a note. Updates the frontmatter on disk and deletes the alias from the database immediately. If the `aliases` list becomes empty after removal, the `aliases` key is dropped from the frontmatter entirely.
 
@@ -161,7 +292,7 @@ Removes an alias from a note. Updates the frontmatter on disk and deletes the al
 
 ## Properties
 
-### `list-properties`
+### `list_properties`
 
 Lists frontmatter properties indexed from the vault database. Behaviour depends on which parameters are provided.
 
@@ -208,6 +339,50 @@ All notes with a property (`name` only):
 - **Note A** (folder/note-a.md): active
 - **Note B** (folder/note-b.md): draft
 ```
+
+### `add_property`
+
+Adds a new frontmatter property to a note. Updates the file on disk and inserts the entry into the database immediately. Fails without making changes if the property already exists.
+
+| Parameter | Type   | Required | Description                                                    |
+| --------- | ------ | -------- | -------------------------------------------------------------- |
+| `note`    | string | yes      | Note to target: vault-relative path, title, or existing alias. |
+| `name`    | string | yes      | Frontmatter key to add.                                        |
+| `value`   | string | yes      | Value as a string; coerced according to `type`.                |
+| `type`    | string | no       | One of `text` (default), `number`, `boolean`, `list`, `date`, `json`. See table below. |
+
+**Type coercion:**
+
+| `type`    | Input example          | Stored as                          |
+| --------- | ---------------------- | ---------------------------------- |
+| `text`    | `active`               | string                             |
+| `number`  | `42`                   | number                             |
+| `boolean` | `true` or `false`      | boolean                            |
+| `list`    | `work, home, personal` | array (split by comma, trimmed)    |
+| `date`    | `2026-06-25`           | string (rendered as YAML date)     |
+| `json`    | `{"x":1}` or `[1,2]`  | parsed JSON value (any valid type) |
+
+**Result:** Human-readable confirmation or error message, e.g.:
+- `Added property "status" to "Note Title"`
+- `Note not found: <input>`
+- `Property "status" already exists in "Note Title"`
+- `"notanumber" is not a valid number`
+
+---
+
+### `remove_property`
+
+Removes a frontmatter property from a note. Updates the file on disk and deletes the entry from the database immediately.
+
+| Parameter | Type   | Required | Description                                                    |
+| --------- | ------ | -------- | -------------------------------------------------------------- |
+| `note`    | string | yes      | Note to target: vault-relative path, title, or existing alias. |
+| `name`    | string | yes      | Frontmatter key to remove.                                     |
+
+**Result:** Human-readable confirmation or error message, e.g.:
+- `Removed property "status" from "Note Title"`
+- `Note not found: <input>`
+- `Property "status" not found in "Note Title"`
 
 ---
 

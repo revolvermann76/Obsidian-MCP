@@ -68,7 +68,61 @@ function listNotes(
 }
 
 /**
- * Registers the `search_notes` and `list_notes` MCP tools on the given server.
+ * Returns all notes that have no outgoing links (wikilinks or MD links).
+ *
+ * @param db - Open SQLite database instance.
+ * @returns Array of `{ path, title }` objects ordered by path.
+ */
+function deadendNotes(db: Database): { path: string; title: string }[] {
+  return db
+    .prepare(
+      `SELECT path, title FROM notes
+       WHERE id NOT IN (SELECT DISTINCT source_id FROM links)
+       ORDER BY path`,
+    )
+    .all() as { path: string; title: string }[]
+}
+
+/**
+ * Returns all notes that have no incoming links from any other note.
+ *
+ * Mirrors the backlink resolution logic: a note is considered "linked to" if
+ * its title OR its vault-relative path appears as a `target_path` in the links table.
+ *
+ * @param db - Open SQLite database instance.
+ * @returns Array of `{ path, title }` objects ordered by path.
+ */
+function orphanNotes(db: Database): { path: string; title: string }[] {
+  return db
+    .prepare(
+      `SELECT path, title FROM notes
+       WHERE path NOT IN (SELECT target_path FROM links)
+         AND title NOT IN (SELECT target_path FROM links)
+       ORDER BY path`,
+    )
+    .all() as { path: string; title: string }[]
+}
+
+/**
+ * Returns all notes that are both orphans (no incoming links) and dead ends (no outgoing links).
+ *
+ * @param db - Open SQLite database instance.
+ * @returns Array of `{ path, title }` objects ordered by path.
+ */
+function aloneNotes(db: Database): { path: string; title: string }[] {
+  return db
+    .prepare(
+      `SELECT path, title FROM notes
+       WHERE id NOT IN (SELECT DISTINCT source_id FROM links)
+         AND path NOT IN (SELECT target_path FROM links)
+         AND title NOT IN (SELECT target_path FROM links)
+       ORDER BY path`,
+    )
+    .all() as { path: string; title: string }[]
+}
+
+/**
+ * Registers the `search_notes`, `list_notes`, `deadends`, `orphans`, and `alones` MCP tools on the given server.
  *
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tools on.
@@ -109,6 +163,46 @@ export function registerSearchTools(db: Database, server: McpServer): void {
       return { content: [{ type: 'text', text }] }
     },
   )
-}
 
-//TODO consistent naming of tools (- and _)
+  server.registerTool(
+    'deadends',
+    {
+      description: 'List all notes that have no outgoing links (wikilinks or markdown links)',
+      inputSchema: {},
+    },
+    async () => {
+      const notes = deadendNotes(db)
+      if (notes.length === 0) return { content: [{ type: 'text', text: 'No dead-end notes found.' }] }
+      const text = notes.map((n) => `- **${n.title}** (${n.path})`).join('\n')
+      return { content: [{ type: 'text', text }] }
+    },
+  )
+
+  server.registerTool(
+    'orphans',
+    {
+      description: 'List all notes that no other note links to',
+      inputSchema: {},
+    },
+    async () => {
+      const notes = orphanNotes(db)
+      if (notes.length === 0) return { content: [{ type: 'text', text: 'No orphan notes found.' }] }
+      const text = notes.map((n) => `- **${n.title}** (${n.path})`).join('\n')
+      return { content: [{ type: 'text', text }] }
+    },
+  )
+
+  server.registerTool(
+    'alones',
+    {
+      description: 'List all notes that have neither incoming nor outgoing links (orphan + dead end)',
+      inputSchema: {},
+    },
+    async () => {
+      const notes = aloneNotes(db)
+      if (notes.length === 0) return { content: [{ type: 'text', text: 'No alone notes found.' }] }
+      const text = notes.map((n) => `- **${n.title}** (${n.path})`).join('\n')
+      return { content: [{ type: 'text', text }] }
+    },
+  )
+}
