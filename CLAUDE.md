@@ -58,7 +58,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | File | Tool(s) | Concern |
 |------|---------|---------|
 | `src/tools/searchTools.ts` | `search_notes`, `list_notes`, `deadends`, `orphans`, `alones` | Finding sets of notes |
-| `src/tools/noteTools.ts` | `read_note`, `info_note`, `outline_note` | Reading a single note, its metadata, and heading structure |
+| `src/tools/noteTools.ts` | `read_note`, `info_note`, `outline_note`, `append_note` | Reading a single note, its metadata, heading structure, and appending content |
 | `src/tools/backlinkTools.ts` | `get_backlinks` | Notes linking to a given note |
 | `src/tools/tagTools.ts` | `search_by_tag`, `list_tags`, `add_tag`, `remove_tag` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `sub_folders`, `info_folder` | Listing vault folder structure and folder metadata |
@@ -80,6 +80,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `read_note` — read full content by exact path, title, or alias
 - `info_note` — return metadata for a note: title, path, modified date, size, word count, outgoing links, backlinks, aliases, tags, frontmatter properties (excluding `tags`/`aliases`)
 - `outline_note` — return the heading structure (H1–H6) of a note as a flat list of heading lines
+- `append_note` — append markdown content to the end of a note by title, alias, or path; updates disk and re-indexes DB immediately
 - `orphans` — list all notes that no other note links to (neither by path nor by title)
 - `alones` — list all notes that are both orphans and dead ends (no incoming and no outgoing links)
 - `list_notes` — list all notes, filterable by `folder` (path prefix) or `tag`

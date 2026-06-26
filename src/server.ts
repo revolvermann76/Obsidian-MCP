@@ -33,7 +33,7 @@ export async function startServer(db: Database, vaultPath: string): Promise<void
   registerAliasesTools(db, server, vaultPath)
   registerPropertyTools(db, server, vaultPath)
   registerBacklinkTools(db, server)
-  registerNoteTools(db, server)
+  registerNoteTools(db, server, vaultPath)
   registerSearchTools(db, server)
   registerTagTools(db, server, vaultPath)
   registerFolderTools(db, server)

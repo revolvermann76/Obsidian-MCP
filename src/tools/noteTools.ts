@@ -1,6 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Database } from 'better-sqlite3'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { z } from 'zod'
+import { indexFile } from '../indexer.js'
 import type { Note } from '../types.js'
 
 /**
@@ -159,7 +162,7 @@ function outlineNote(db: Database, pathOrTitle: string): string {
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tool on.
  */
-export function registerNoteTools(db: Database, server: McpServer): void {
+export function registerNoteTools(db: Database, server: McpServer, vaultPath: string): void {
   server.registerTool(
     'read_note',
     {
@@ -214,6 +217,25 @@ export function registerNoteTools(db: Database, server: McpServer): void {
     },
   )
 
-}
+  server.registerTool(
+    'append_note',
+    {
+      description: 'Append markdown content to the end of a note, updating both disk and the database',
+      inputSchema: {
+        path_or_title: z.string().describe('Vault-relative path, note title, or alias'),
+        content: z.string().describe('Markdown content to append'),
+      },
+    },
+    async ({ path_or_title, content }) => {
+      const note = readNote(db, path_or_title)
+      if (!note) return { content: [{ type: 'text', text: `Note not found: ${path_or_title}` }] }
 
-//TODO append-note
+      const absPath = join(vaultPath, note.path)
+      const raw = readFileSync(absPath, 'utf-8')
+      writeFileSync(absPath, raw.trimEnd() + '\n\n' + content + '\n', 'utf-8')
+      indexFile(db, vaultPath, absPath)
+
+      return { content: [{ type: 'text', text: `Appended content to "${note.title}"` }] }
+    },
+  )
+}
