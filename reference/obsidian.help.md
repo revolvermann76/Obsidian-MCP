@@ -9,28 +9,8 @@ Commands:
 
   files                 List files in the vault
     folder=<path>       - Filter by folder
-    ext=<extension>     - Filter by extension
     total               - Return file count
 
-  folder                Show folder info
-    path=<path>         - Folder path (required)
-    info=files|folders|size  - Return specific info only
-
-  folders               List folders in the vault
-    folder=<path>       - Filter by parent folder
-    total               - Return folder count
-
-  links                 List outgoing links from a file
-    file=<name>         - File name
-    path=<path>         - File path
-    total               - Return link count
-
-  search                Search vault for text
-    query=<text>        - Search query (required)
-    path=<folder>       - Limit to folder
-    limit=<n>           - Max files
-    total               - Return match count
-    case                - Case sensitive
 
   search:context        Search with matching line context
     query=<text>        - Search query (required)
@@ -41,26 +21,6 @@ Commands:
 
 
 ---
-
-  append                Append content to a file
-    file=<name>         - File name
-    path=<path>         - File path
-    content=<text>      - Content to append (required)
-    inline              - Append without newline
-
-  create                Create a new file
-    name=<name>         - File name
-    path=<path>         - File path
-    content=<text>      - Initial content
-    template=<name>     - Template to use
-    overwrite           - Overwrite if file exists
-    open                - Open file after creating
-    newtab              - Open in new tab
-
-  delete                Delete a file
-    file=<name>         - File name
-    path=<path>         - File path
-    permanent           - Skip trash, delete permanently
 
   move                  Move or rename a file
     file=<name>         - File name
