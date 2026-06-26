@@ -58,10 +58,12 @@ tags:             active, project, work
 
 Fulltext search across all notes using SQLite FTS5. Matched terms are highlighted with `**` in the returned snippet.
 
-| Parameter | Type            | Required | Description                                                                                   |
-| --------- | --------------- | -------- | --------------------------------------------------------------------------------------------- |
-| `query`   | string          | yes      | Search query. Supports FTS5 syntax: `"exact phrase"`, `term*`, `term1 OR term2`, `-excluded`. |
-| `limit`   | integer (1–100) | no       | Maximum number of results. Defaults to 20.                                                    |
+| Parameter        | Type            | Required | Description                                                                                                              |
+| ---------------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `query`          | string          | yes      | Search query. Supports FTS5 syntax: `"exact phrase"`, `term*`, `term1 OR term2`, `-excluded`. Treated as a plain string when `case_sensitive` is true. |
+| `folder`         | string          | no       | Limit search to this vault-relative folder path (e.g. `projects`).                                                      |
+| `limit`          | integer (1–100) | no       | Maximum number of results. Defaults to 20.                                                                               |
+| `case_sensitive` | boolean         | no       | When `true`, uses exact case-sensitive matching via `INSTR` instead of FTS5 (default: `false`).                          |
 
 **Result:** One entry per matching note, formatted as:
 ```
@@ -69,6 +71,50 @@ Fulltext search across all notes using SQLite FTS5. Matched terms are highlighte
 ...snippet with **highlighted** terms...
 ```
 Entries are separated by `---`. Returns `No results found.` when nothing matches.
+
+---
+
+### `note_create`
+
+Creates a new markdown note in the vault. Missing parent folders are created automatically.
+
+| Parameter   | Type    | Required | Description                                                                          |
+| ----------- | ------- | -------- | ------------------------------------------------------------------------------------ |
+| `name`      | string  | yes      | Filename with or without `.md` extension.                                            |
+| `folder`    | string  | no       | Vault-relative folder path. Defaults to the vault root when omitted.                 |
+| `content`   | string  | no       | Initial markdown content. Creates an empty file when omitted.                        |
+| `overwrite` | boolean | no       | Replace the file if it already exists (default: `false`).                            |
+
+**Result:** `Created note: path/to/note.md` or `Overwrote note: path/to/note.md`. Returns an error message if the note already exists and `overwrite` is not set.
+
+---
+
+### `note_delete`
+
+Deletes a note from the vault and removes it from the database. When using a title or alias, the deletion is refused if more than one note matches — use the exact vault-relative path in that case.
+
+| Parameter | Type   | Required | Description                                      |
+| --------- | ------ | -------- | ------------------------------------------------ |
+| `note`    | string | yes      | Vault-relative path, note title, or alias.       |
+
+**Result:** `Deleted "Title" (path/to/note.md)` on success. Returns an error listing all ambiguous paths when a title/alias matches multiple notes.
+
+---
+
+### `note_get_links`
+
+Lists all outgoing links (wikilinks and markdown links) in a note.
+
+| Parameter       | Type   | Required | Description                                          |
+| --------------- | ------ | -------- | ---------------------------------------------------- |
+| `path_or_title` | string | yes      | Vault-relative path, note title, or alias.           |
+
+**Result:** Bullet list in the same format as `note_get_backlinks`. Resolved links show the note title and path; dead links (no matching note in the vault) are marked as `(not found)`.
+
+```
+- **Linked Note** (path/to/linked.md)
+- *dead/link/target* (not found)
+```
 
 ---
 

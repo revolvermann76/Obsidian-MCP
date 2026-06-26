@@ -58,7 +58,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | File | Tool(s) | Concern |
 |------|---------|---------|
 | `src/tools/searchTools.ts` | `search_fulltext` | FTS5 fulltext search |
-| `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Reading, listing, and querying notes |
+| `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks`, `note_get_links`, `note_create`, `note_delete`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Reading, listing, creating, deleting, and querying notes |
 | `src/tools/tagTools.ts` | `tag_search`, `tag_list`, `tag_add`, `tag_remove` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
 | `src/tools/aliasTools.ts` | `alias_list`, `alias_add`, `alias_remove` | Listing, adding, and removing aliases |
@@ -75,7 +75,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 **MCP tools:**
 - `folder_get_subfolders` — list subfolders of a vault folder (defaults to root); `recursive=true` returns all descendant folders
 - `folder_info` — return metadata for a folder: direct/total note counts, subfolders, total word count, tags (defaults to vault root)
-- `search_fulltext` — FTS5 fulltext search with snippet highlighting, returns title + path + snippet
+- `search_fulltext` — FTS5 fulltext search with snippet highlighting, returns title + path + snippet; optional `folder` limits scope; `case_sensitive` switches to INSTR-based exact match (default: false)
 - `note_read` — read full content by exact path, title, or alias
 - `note_info` — return metadata for a note: title, path, modified date, size, word count, outgoing links, backlinks, aliases, tags, frontmatter properties (excluding `tags`/`aliases`)
 - `note_outline` — return the heading structure (H1–H6) of a note as a flat list of heading lines
@@ -85,6 +85,9 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `note_list` — list all notes, filterable by `folder` (path prefix) or `tag`
 - `note_deadends` — list all notes that have no outgoing links (wikilinks or MD links)
 - `note_get_backlinks` — find notes linking to a given note (matches by title, path, or alias)
+- `note_get_links` — list all outgoing links in a note; resolved links show title + path, dead links show the raw target marked as not found
+- `note_create` — create a new note; `folder` is optional (defaults to vault root); missing folders are created automatically; `content` sets initial content; `overwrite` replaces an existing file
+- `note_delete` — delete a note by path, title, or alias; refuses if a title/alias matches multiple notes — use the exact path in that case
 - `tag_search` — find notes by frontmatter tag or inline body tag
 - `tag_list` — list all unique tags in the vault with their note counts
 - `tag_add` — add a tag to a note's frontmatter by title, alias, or path; updates disk and DB immediately

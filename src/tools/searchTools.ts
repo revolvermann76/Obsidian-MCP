@@ -18,7 +18,33 @@ function searchNotes(
   db: Database,
   query: string,
   limit = 20,
+  folder?: string,
+  caseSensitive = false,
 ): { path: string; title: string; snippet: string }[] {
+  if (caseSensitive) {
+    const sql = folder
+      ? 'SELECT path, title, content FROM notes WHERE INSTR(content, ?) > 0 AND path LIKE ? ORDER BY path LIMIT ?'
+      : 'SELECT path, title, content FROM notes WHERE INSTR(content, ?) > 0 ORDER BY path LIMIT ?'
+    const rows = (
+      folder
+        ? db.prepare(sql).all(query, `${folder}/%`, limit)
+        : db.prepare(sql).all(query, limit)
+    ) as { path: string; title: string; content: string }[]
+    return rows.map((r) => ({ path: r.path, title: r.title, snippet: makeSnippet(r.content, query) }))
+  }
+
+  if (folder) {
+    return db
+      .prepare(
+        `SELECT n.path, n.title, snippet(notes_fts, 1, '**', '**', '...', 32) AS snippet
+         FROM notes_fts
+         JOIN notes n ON notes_fts.rowid = n.id
+         WHERE notes_fts MATCH ? AND n.path LIKE ?
+         ORDER BY rank
+         LIMIT ?`,
+      )
+      .all(query, `${folder}/%`, limit) as { path: string; title: string; snippet: string }[]
+  }
   return db
     .prepare(
       `SELECT n.path, n.title, snippet(notes_fts, 1, '**', '**', '...', 32) AS snippet
@@ -31,6 +57,15 @@ function searchNotes(
     .all(query, limit) as { path: string; title: string; snippet: string }[]
 }
 
+function makeSnippet(content: string, query: string): string {
+  const idx = content.indexOf(query)
+  if (idx === -1) return ''
+  const start = Math.max(0, idx - 60)
+  const end = Math.min(content.length, idx + query.length + 60)
+  const fragment = content.slice(start, end).replace(query, `**${query}**`)
+  return `${start > 0 ? '...' : ''}${fragment}${end < content.length ? '...' : ''}`
+}
+
 /**
  * Registers the `search_fulltext` MCP tool on the given server.
  *
@@ -41,14 +76,16 @@ export function registerSearchTools(db: Database, server: McpServer): void {
   server.registerTool(
     'search_fulltext',
     {
-      description: 'Fulltext search across all notes in the vault',
+      description: 'Fulltext search across all notes in the vault, optionally limited to a subfolder',
       inputSchema: {
         query: z.string().describe('Search query (SQLite FTS5 syntax supported)'),
+        folder: z.string().optional().describe('Limit search to this vault-relative folder path'),
         limit: z.number().int().min(1).max(100).default(20).optional(),
+        case_sensitive: z.boolean().optional().describe('Case-sensitive search (default: false)'),
       },
     },
-    async ({ query, limit }) => {
-      const results = searchNotes(db, query, limit ?? 20)
+    async ({ query, folder, limit, case_sensitive }) => {
+      const results = searchNotes(db, query, limit ?? 20, folder, case_sensitive ?? false)
       if (results.length === 0) return { content: [{ type: 'text', text: 'No results found.' }] }
       const text = results
         .map((r) => `**${r.title}** (${r.path})\n${r.snippet}`)

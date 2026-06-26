@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Database } from 'better-sqlite3'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { z } from 'zod'
 import { indexFile } from '../indexer.js'
 import type { Note } from '../types.js'
@@ -180,6 +180,52 @@ function getBacklinks(db: Database, pathOrTitle: string): { path: string; title:
        ORDER BY n.path`,
     )
     .all(target, pathOrTitle) as { path: string; title: string }[]
+}
+
+/**
+ * Returns all outgoing links from a note, resolved against the notes table where possible.
+ *
+ * Each `target_path` stored in the `links` table is matched against both note paths
+ * and titles. Unresolvable links (dead links) are included with `title` and `path` as
+ * `null` so callers can format them differently.
+ *
+ * @param db - Open SQLite database instance.
+ * @param pathOrTitle - Vault-relative path, title, or alias of the source note.
+ * @returns Object with the source `note` (or `undefined` if not found) and an
+ *   array of `{ targetPath, title, path }` entries ordered by `target_path`.
+ */
+function getOutgoingLinks(
+  db: Database,
+  pathOrTitle: string,
+): {
+  note: { id: number; title: string } | undefined
+  links: { targetPath: string; title: string | null; path: string | null }[]
+} {
+  const note = db
+    .prepare(
+      `SELECT n.id, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(pathOrTitle, pathOrTitle, pathOrTitle) as { id: number; title: string } | undefined
+
+  if (!note) return { note: undefined, links: [] }
+
+  const rows = db
+    .prepare(
+      `SELECT l.target_path, n.title, n.path
+       FROM links l
+       LEFT JOIN notes n ON n.path = l.target_path OR n.title = l.target_path
+       WHERE l.source_id = ?
+       ORDER BY l.target_path`,
+    )
+    .all(note.id) as { target_path: string; title: string | null; path: string | null }[]
+
+  return {
+    note,
+    links: rows.map((r) => ({ targetPath: r.target_path, title: r.title, path: r.path })),
+  }
 }
 
 /**
@@ -371,6 +417,30 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
   )
 
   server.registerTool(
+    'note_get_links',
+    {
+      description: 'Find all outgoing links in a note (wikilinks and markdown links)',
+      inputSchema: {
+        path_or_title: z.string().describe('Vault-relative path, title, or alias of the source note'),
+      },
+    },
+    async ({ path_or_title }) => {
+      const { note, links } = getOutgoingLinks(db, path_or_title)
+      if (!note) return { content: [{ type: 'text', text: `Note not found: ${path_or_title}` }] }
+      if (links.length === 0)
+        return { content: [{ type: 'text', text: `No outgoing links found in: ${path_or_title}` }] }
+      const text = links
+        .map((l) =>
+          l.title && l.path
+            ? `- **${l.title}** (${l.path})`
+            : `- *${l.targetPath}* (not found)`,
+        )
+        .join('\n')
+      return { content: [{ type: 'text', text }] }
+    },
+  )
+
+  server.registerTool(
     'note_append',
     {
       description: 'Append markdown content to the end of a note, updating both disk and the database',
@@ -389,6 +459,89 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
       indexFile(db, vaultPath, absPath)
 
       return { content: [{ type: 'text', text: `Appended content to "${note.title}"` }] }
+    },
+  )
+
+  server.registerTool(
+    'note_create',
+    {
+      description:
+        'Create a new note in the vault. ' +
+        'Without a folder the note is created in the vault root. ' +
+        'Missing folders are created automatically.',
+      inputSchema: {
+        name: z.string().describe('Note filename (with or without .md extension)'),
+        folder: z.string().optional().describe('Vault-relative folder path (created if absent)'),
+        content: z.string().optional().describe('Initial markdown content (default: empty)'),
+        overwrite: z.boolean().optional().describe('Overwrite the note if it already exists (default: false)'),
+      },
+    },
+    async ({ name, folder, content, overwrite }) => {
+      const filename = name.endsWith('.md') ? name : `${name}.md`
+      const relPath = folder ? `${folder}/${filename}` : filename
+      const absPath = join(vaultPath, relPath)
+
+      if (existsSync(absPath) && !overwrite)
+        return { content: [{ type: 'text', text: `Note already exists: ${relPath}` }] }
+
+      mkdirSync(dirname(absPath), { recursive: true })
+      writeFileSync(absPath, content ?? '', 'utf-8')
+      indexFile(db, vaultPath, absPath)
+
+      return { content: [{ type: 'text', text: `${overwrite ? 'Overwrote' : 'Created'} note: ${relPath}` }] }
+    },
+  )
+
+  server.registerTool(
+    'note_delete',
+    {
+      description:
+        'Delete a note from the vault by path, title, or alias. ' +
+        'If a title or alias is given and multiple notes match, the deletion is refused — use the exact vault-relative path instead.',
+      inputSchema: {
+        note: z.string().describe('Vault-relative path, note title, or alias'),
+      },
+    },
+    async ({ note: ref }) => {
+      // Path match: unambiguous, delete directly
+      const byPath = db
+        .prepare('SELECT id, path, title FROM notes WHERE path = ?')
+        .get(ref) as { id: number; path: string; title: string } | undefined
+
+      if (byPath) {
+        unlinkSync(join(vaultPath, byPath.path))
+        db.prepare('DELETE FROM notes WHERE id = ?').run(byPath.id)
+        return { content: [{ type: 'text', text: `Deleted "${byPath.title}" (${byPath.path})` }] }
+      }
+
+      // Title / alias match: guard against ambiguity
+      const matches = db
+        .prepare(
+          `SELECT DISTINCT n.id, n.path, n.title FROM notes n
+           LEFT JOIN aliases a ON a.note_id = n.id
+           WHERE n.title = ? OR a.alias = ?`,
+        )
+        .all(ref, ref) as { id: number; path: string; title: string }[]
+
+      if (matches.length === 0)
+        return { content: [{ type: 'text', text: `Note not found: ${ref}` }] }
+
+      if (matches.length > 1) {
+        const list = matches.map((m) => `  - ${m.path}`).join('\n')
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Multiple notes match "${ref}" — use the exact path to delete:\n${list}`,
+            },
+          ],
+        }
+      }
+
+      const target = matches[0]!
+      unlinkSync(join(vaultPath, target.path))
+      db.prepare('DELETE FROM notes WHERE id = ?').run(target.id)
+      return { content: [{ type: 'text', text: `Deleted "${target.title}" (${target.path})` }] }
     },
   )
 
