@@ -57,8 +57,8 @@ Each file owns one thematic concern: query logic + `register*` function called b
 
 | File | Tool(s) | Concern |
 |------|---------|---------|
-| `src/tools/searchTools.ts` | `search_fulltext`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Finding sets of notes |
-| `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks` | Reading a single note, its metadata, heading structure, appending content, and backlinks |
+| `src/tools/searchTools.ts` | `search_fulltext` | FTS5 fulltext search |
+| `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Reading, listing, and querying notes |
 | `src/tools/tagTools.ts` | `tag_search`, `tag_list`, `tag_add`, `tag_remove` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
 | `src/tools/aliasTools.ts` | `alias_list`, `alias_add`, `alias_remove` | Listing, adding, and removing aliases |
