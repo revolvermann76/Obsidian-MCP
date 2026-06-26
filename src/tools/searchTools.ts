@@ -122,14 +122,14 @@ function aloneNotes(db: Database): { path: string; title: string }[] {
 }
 
 /**
- * Registers the `search_notes`, `list_notes`, `deadends`, `orphans`, and `alones` MCP tools on the given server.
+ * Registers the `search_fulltext`, `note_list`, `note_deadends`, `note_orphans`, and `note_alones` MCP tools on the given server.
  *
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tools on.
  */
 export function registerSearchTools(db: Database, server: McpServer): void {
   server.registerTool(
-    'search_notes',
+    'search_fulltext',
     {
       description: 'Fulltext search across all notes in the vault',
       inputSchema: {
@@ -148,7 +148,7 @@ export function registerSearchTools(db: Database, server: McpServer): void {
   )
 
   server.registerTool(
-    'list_notes',
+    'note_list',
     {
       description: 'List all notes, optionally filtered by subfolder or tag',
       inputSchema: {
@@ -165,7 +165,7 @@ export function registerSearchTools(db: Database, server: McpServer): void {
   )
 
   server.registerTool(
-    'deadends',
+    'note_deadends',
     {
       description: 'List all notes that have no outgoing links (wikilinks or markdown links)',
       inputSchema: {},
@@ -179,7 +179,7 @@ export function registerSearchTools(db: Database, server: McpServer): void {
   )
 
   server.registerTool(
-    'orphans',
+    'note_orphans',
     {
       description: 'List all notes that no other note links to',
       inputSchema: {},
@@ -193,7 +193,7 @@ export function registerSearchTools(db: Database, server: McpServer): void {
   )
 
   server.registerTool(
-    'alones',
+    'note_alones',
     {
       description: 'List all notes that have neither incoming nor outgoing links (orphan + dead end)',
       inputSchema: {},

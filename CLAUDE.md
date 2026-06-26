@@ -57,7 +57,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 
 | File | Tool(s) | Concern |
 |------|---------|---------|
-| `src/tools/searchTools.ts` | `search_notes`, `list_notes`, `deadends`, `orphans`, `alones` | Finding sets of notes |
+| `src/tools/searchTools.ts` | `search_fulltext`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Finding sets of notes |
 | `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks` | Reading a single note, its metadata, heading structure, appending content, and backlinks |
 | `src/tools/tagTools.ts` | `tag_search`, `tag_list`, `tag_add`, `tag_remove` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
@@ -75,15 +75,15 @@ Each file owns one thematic concern: query logic + `register*` function called b
 **MCP tools:**
 - `folder_get_subfolders` — list subfolders of a vault folder (defaults to root); `recursive=true` returns all descendant folders
 - `folder_info` — return metadata for a folder: direct/total note counts, subfolders, total word count, tags (defaults to vault root)
-- `search_notes` — FTS5 fulltext search with snippet highlighting, returns title + path + snippet
+- `search_fulltext` — FTS5 fulltext search with snippet highlighting, returns title + path + snippet
 - `note_read` — read full content by exact path, title, or alias
 - `note_info` — return metadata for a note: title, path, modified date, size, word count, outgoing links, backlinks, aliases, tags, frontmatter properties (excluding `tags`/`aliases`)
 - `note_outline` — return the heading structure (H1–H6) of a note as a flat list of heading lines
 - `note_append` — append markdown content to the end of a note by title, alias, or path; updates disk and re-indexes DB immediately
-- `orphans` — list all notes that no other note links to (neither by path nor by title)
-- `alones` — list all notes that are both orphans and dead ends (no incoming and no outgoing links)
-- `list_notes` — list all notes, filterable by `folder` (path prefix) or `tag`
-- `deadends` — list all notes that have no outgoing links (wikilinks or MD links)
+- `note_orphans` — list all notes that no other note links to (neither by path nor by title)
+- `note_alones` — list all notes that are both orphans and dead ends (no incoming and no outgoing links)
+- `note_list` — list all notes, filterable by `folder` (path prefix) or `tag`
+- `note_deadends` — list all notes that have no outgoing links (wikilinks or MD links)
 - `note_get_backlinks` — find notes linking to a given note (matches by title, path, or alias)
 - `tag_search` — find notes by frontmatter tag or inline body tag
 - `tag_list` — list all unique tags in the vault with their note counts

@@ -54,7 +54,7 @@ tags:             active, project, work
 
 ## Searching & Listing
 
-### `search_notes`
+### `search_fulltext`
 
 Fulltext search across all notes using SQLite FTS5. Matched terms are highlighted with `**` in the returned snippet.
 
@@ -72,7 +72,7 @@ Entries are separated by `---`. Returns `No results found.` when nothing matches
 
 ---
 
-### `list_notes`
+### `note_list`
 
 Lists all notes in the vault, optionally filtered by folder or tag. When both `folder` and `tag` are given, `tag` takes precedence.
 
@@ -157,7 +157,7 @@ Removes a frontmatter tag from a note. Updates the file on disk and deletes the 
 ---
 
 
-### `deadends`
+### `note_deadends`
 
 Lists all notes that have no outgoing links — neither wikilinks nor markdown links. Useful for finding isolated notes that don't connect to the rest of the vault.
 
@@ -171,7 +171,7 @@ Returns `No dead-end notes found.` when all notes have at least one outgoing lin
 
 ---
 
-### `alones`
+### `note_alones`
 
 Lists all notes that are completely disconnected from the vault — no incoming links (orphan) and no outgoing links (dead end).
 
@@ -251,7 +251,7 @@ Returns `No headings found in "<title>"` when the note has no headings, or `Note
 
 ---
 
-### `orphans`
+### `note_orphans`
 
 Lists all notes that no other note links to — neither by vault-relative path nor by title. Useful for finding notes that are completely disconnected from the rest of the vault.
 
