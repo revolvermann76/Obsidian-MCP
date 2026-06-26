@@ -59,7 +59,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 |------|---------|---------|
 | `src/tools/searchTools.ts` | `search_notes`, `list_notes`, `deadends`, `orphans`, `alones` | Finding sets of notes |
 | `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks` | Reading a single note, its metadata, heading structure, appending content, and backlinks |
-| `src/tools/tagTools.ts` | `search_by_tag`, `list_tags`, `add_tag`, `remove_tag` | Filtering by tag, listing and writing tags |
+| `src/tools/tagTools.ts` | `tag_search`, `tag_list`, `tag_add`, `tag_remove` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
 | `src/tools/aliasTools.ts` | `alias_list`, `alias_add`, `alias_remove` | Listing, adding, and removing aliases |
 | `src/tools/propertyTools.ts` | `property_list`, `property_add`, `property_remove` | Listing, adding, and removing frontmatter properties |
@@ -85,10 +85,10 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `list_notes` — list all notes, filterable by `folder` (path prefix) or `tag`
 - `deadends` — list all notes that have no outgoing links (wikilinks or MD links)
 - `note_get_backlinks` — find notes linking to a given note (matches by title, path, or alias)
-- `search_by_tag` — find notes by frontmatter tag or inline body tag
-- `list_tags` — list all unique tags in the vault with their note counts
-- `add_tag` — add a tag to a note's frontmatter by title, alias, or path; updates disk and DB immediately
-- `remove_tag` — remove a frontmatter tag from a note; drops `tags` key if list becomes empty; inline body tags cannot be removed via this tool
+- `tag_search` — find notes by frontmatter tag or inline body tag
+- `tag_list` — list all unique tags in the vault with their note counts
+- `tag_add` — add a tag to a note's frontmatter by title, alias, or path; updates disk and DB immediately
+- `tag_remove` — remove a frontmatter tag from a note; drops `tags` key if list becomes empty; inline body tags cannot be removed via this tool
 - `alias_list` — list aliases; filterable by `file`, `path`; supports `total` (count only) and `verbose` (include paths)
 - `alias_add` — add an alias to a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately
 - `alias_remove` — remove an alias from a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately; drops the `aliases` key entirely if the list becomes empty

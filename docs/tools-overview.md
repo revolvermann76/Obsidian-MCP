@@ -89,7 +89,7 @@ Returns `No notes found.` when the filter matches nothing.
 
 ---
 
-### `search_by_tag`
+### `tag_search`
 
 Finds all notes that carry a specific tag. Matches both frontmatter tags and inline body tags (e.g. `#tag`).
 
@@ -105,7 +105,7 @@ Returns `No notes with tag: <tag>` when nothing matches.
 
 ---
 
-### `list_tags`
+### `tag_list`
 
 Lists all unique tags across the vault with the number of notes each tag appears on.
 
@@ -121,7 +121,7 @@ Returns `No tags found.` when the vault has no tags.
 
 ---
 
-### `add_tag`
+### `tag_add`
 
 Adds a tag to a note's frontmatter. Updates the file on disk and inserts the tag into the database immediately. Fails without making changes if the tag already exists on the note.
 
@@ -137,7 +137,7 @@ Adds a tag to a note's frontmatter. Updates the file on disk and inserts the tag
 
 ---
 
-### `remove_tag`
+### `tag_remove`
 
 Removes a frontmatter tag from a note. Updates the file on disk and deletes the tag from the database immediately. If the `tags` list becomes empty after removal, the `tags` key is dropped from the frontmatter entirely.
 

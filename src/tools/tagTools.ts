@@ -148,7 +148,7 @@ function removeTag(
 }
 
 /**
- * Registers the `search_by_tag`, `list_tags`, `add_tag`, and `remove_tag` MCP tools on the given server.
+ * Registers the `tag_search`, `tag_list`, `tag_add`, and `tag_remove` MCP tools on the given server.
  *
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tools on.
@@ -156,7 +156,7 @@ function removeTag(
  */
 export function registerTagTools(db: Database, server: McpServer, vaultPath: string): void {
   server.registerTool(
-    'search_by_tag',
+    'tag_search',
     {
       description: 'Find all notes that have a specific frontmatter tag',
       inputSchema: {
@@ -173,7 +173,7 @@ export function registerTagTools(db: Database, server: McpServer, vaultPath: str
   )
 
   server.registerTool(
-    'list_tags',
+    'tag_list',
     {
       description: 'List all tags in the vault with their note counts',
       inputSchema: {},
@@ -187,7 +187,7 @@ export function registerTagTools(db: Database, server: McpServer, vaultPath: str
   )
 
   server.registerTool(
-    'add_tag',
+    'tag_add',
     {
       description: 'Add a tag to a note\'s frontmatter, updating both disk and the database',
       inputSchema: {
@@ -202,7 +202,7 @@ export function registerTagTools(db: Database, server: McpServer, vaultPath: str
   )
 
   server.registerTool(
-    'remove_tag',
+    'tag_remove',
     {
       description:
         'Remove a frontmatter tag from a note, updating both disk and the database. ' +
