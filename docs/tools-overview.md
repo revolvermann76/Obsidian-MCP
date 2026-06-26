@@ -11,7 +11,7 @@ Note resolution — wherever a tool accepts a note reference by `file`, `path`, 
 
 ## Folder Structure
 
-### `sub_folders`
+### `folder_get_subfolders`
 
 Lists subfolders of a vault folder, derived from the indexed note paths (no filesystem access). A folder is considered to exist if at least one note lives inside it.
 
@@ -30,7 +30,7 @@ Returns `No subfolders found.` when the folder contains no subfolders.
 
 ---
 
-### `info_folder`
+### `folder_info`
 
 Returns a metadata summary for a vault folder. Without a `folder` parameter, reports on the vault root.
 
@@ -187,7 +187,7 @@ Returns `No alone notes found.` when every note has at least one link in either 
 
 ## Reading
 
-### `read_note`
+### `note_read`
 
 Reads the full content of a single note. Resolves the note by path, title, or alias.
 
@@ -205,7 +205,7 @@ Returns `Note not found: <input>` when no match is found.
 
 ---
 
-### `info_note`
+### `note_info`
 
 Returns a metadata summary for a single note.
 
@@ -232,7 +232,7 @@ properties:
 
 ---
 
-### `outline_note`
+### `note_outline`
 
 Returns the heading structure (H1–H6) of a note as a flat list of heading lines, preserving the `#` prefix so the hierarchy is visible.
 
@@ -267,7 +267,7 @@ Returns `No orphan notes found.` when every note is linked to by at least one ot
 
 ## Links & Backlinks
 
-### `get_backlinks`
+### `note_get_backlinks`
 
 Finds all notes that contain a wikilink or markdown link pointing to a given note.
 
@@ -285,7 +285,7 @@ Returns `No backlinks found for: <input>` when nothing links to the target.
 
 ## Aliases
 
-### `list_aliases`
+### `alias_list`
 
 Lists aliases defined across the vault, with optional filtering and output modes.
 
@@ -310,7 +310,7 @@ Returns `No aliases found.` when the filter matches nothing.
 
 ---
 
-### `add_alias`
+### `alias_add`
 
 Adds a new alias to a note. Updates the frontmatter `aliases` key on disk and records the alias in the database immediately. Fails without making changes if the alias already exists on the note.
 
@@ -326,7 +326,7 @@ Adds a new alias to a note. Updates the frontmatter `aliases` key on disk and re
 
 ---
 
-### `remove_alias`
+### `alias_remove`
 
 Removes an alias from a note. Updates the frontmatter on disk and deletes the alias from the database immediately. If the `aliases` list becomes empty after removal, the `aliases` key is dropped from the frontmatter entirely.
 
@@ -344,7 +344,7 @@ Removes an alias from a note. Updates the frontmatter on disk and deletes the al
 
 ## Properties
 
-### `list_properties`
+### `property_list`
 
 Lists frontmatter properties indexed from the vault database. Behaviour depends on which parameters are provided.
 
@@ -392,7 +392,7 @@ All notes with a property (`name` only):
 - **Note B** (folder/note-b.md): draft
 ```
 
-### `add_property`
+### `property_add`
 
 Adds a new frontmatter property to a note. Updates the file on disk and inserts the entry into the database immediately. Fails without making changes if the property already exists.
 
@@ -422,7 +422,7 @@ Adds a new frontmatter property to a note. Updates the file on disk and inserts 
 
 ---
 
-### `remove_property`
+### `property_remove`
 
 Removes a frontmatter property from a note. Updates the file on disk and deletes the entry from the database immediately.
 

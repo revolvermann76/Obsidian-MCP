@@ -232,7 +232,7 @@ function removeProperty(
 }
 
 /**
- * Registers the `list_properties`, `add_property`, and `remove_property` MCP tools on the given server.
+ * Registers the `property_list`, `property_add`, and `property_remove` MCP tools on the given server.
  *
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tools on.
@@ -240,7 +240,7 @@ function removeProperty(
  */
 export function registerPropertyTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
-    'list_properties',
+    'property_list',
     {
       description:
         'List frontmatter properties indexed from the vault. ' +
@@ -260,7 +260,7 @@ export function registerPropertyTools(db: Database, server: McpServer, vaultPath
   )
 
   server.registerTool(
-    'add_property',
+    'property_add',
     {
       description:
         'Add a frontmatter property to a note, updating both disk and the database. ' +
@@ -285,7 +285,7 @@ export function registerPropertyTools(db: Database, server: McpServer, vaultPath
   )
 
   server.registerTool(
-    'remove_property',
+    'property_remove',
     {
       description: 'Remove a frontmatter property from a note, updating both disk and the database',
       inputSchema: {

@@ -103,14 +103,14 @@ function infoFolder(db: Database, folder: string): string {
 }
 
 /**
- * Registers the `sub_folders` MCP tool on the given server.
+ * Registers the `folder_get_subfolders` MCP tool on the given server.
  *
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tool on.
  */
 export function registerFolderTools(db: Database, server: McpServer): void {
   server.registerTool(
-    'sub_folders',
+    'folder_get_subfolders',
     {
       description:
         'List subfolders of a vault folder. ' +
@@ -137,7 +137,7 @@ export function registerFolderTools(db: Database, server: McpServer): void {
   )
 
   server.registerTool(
-    'info_folder',
+    'folder_info',
     {
       description:
         'Return metadata for a vault folder: note counts, subfolder counts, total word count, and tags. ' +

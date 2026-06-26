@@ -159,7 +159,7 @@ function removeAlias(
 }
 
 /**
- * Registers the `list-aliases`, `add-alias`, and `remove-alias` MCP tools on the given server.
+ * Registers the `alias_list`, `alias_add`, and `alias_remove` MCP tools on the given server.
  *
  * @param db - Open SQLite database instance.
  * @param server - MCP server instance to register the tools on.
@@ -167,7 +167,7 @@ function removeAlias(
  */
 export function registerAliasesTools(db: Database, server: McpServer, vaultPath: string) {
   server.registerTool(
-    'list_aliases',
+    'alias_list',
     {
       description: 'List aliases defined in the vault, with optional filtering',
       inputSchema: {
@@ -191,7 +191,7 @@ export function registerAliasesTools(db: Database, server: McpServer, vaultPath:
   )
 
   server.registerTool(
-    'add_alias',
+    'alias_add',
     {
       description: 'Add an alias to a note, identified by its title, existing alias, or path',
       inputSchema: {
@@ -206,7 +206,7 @@ export function registerAliasesTools(db: Database, server: McpServer, vaultPath:
   )
 
   server.registerTool(
-    'remove_alias',
+    'alias_remove',
     {
       description: 'Remove an alias from a note, identified by its title, existing alias, or path',
       inputSchema: {
