@@ -12,11 +12,13 @@ import { startServer } from './server.js'
  * @returns An object containing the resolved absolute paths for the vault
  *   directory and the SQLite database file.
  */
-function parseArgs(): { vaultPath: string; dbPath: string } {
+function parseArgs(): { vaultPath: string; dbPath: string; transport: 'stdio' | 'http'; port: number } {
   const args = process.argv.slice(2)
   const vaultIdx = args.indexOf('--vault')
   if (vaultIdx === -1 || !args[vaultIdx + 1]) {
-    console.error('Usage: obsidian-mcp --vault <path-to-vault> [--db <path-to-db>]')
+    console.error(
+      'Usage: obsidian-mcp --vault <path-to-vault> [--db <path-to-db>] [--transport stdio|http] [--port <number>]',
+    )
     process.exit(1)
   }
   const vaultPath = resolve(args[vaultIdx + 1]!)
@@ -25,7 +27,22 @@ function parseArgs(): { vaultPath: string; dbPath: string } {
   const dbPath =
     dbIdx !== -1 && args[dbIdx + 1] ? resolve(args[dbIdx + 1]!) : join(vaultPath, '.mcp-index.db')
 
-  return { vaultPath, dbPath }
+  const transportIdx = args.indexOf('--transport')
+  const transportArg = transportIdx !== -1 ? args[transportIdx + 1] : 'stdio'
+  if (transportArg !== 'stdio' && transportArg !== 'http') {
+    console.error('--transport must be "stdio" or "http"')
+    process.exit(1)
+  }
+  const transport = transportArg as 'stdio' | 'http'
+
+  const portIdx = args.indexOf('--port')
+  const portArg = portIdx !== -1 ? parseInt(args[portIdx + 1] ?? '', 10) : 3000
+  if (isNaN(portArg) || portArg < 1 || portArg > 65535) {
+    console.error('--port must be a valid port number (1–65535)')
+    process.exit(1)
+  }
+
+  return { vaultPath, dbPath, transport, port: portArg }
 }
 
 /**
@@ -39,16 +56,17 @@ function parseArgs(): { vaultPath: string; dbPath: string } {
  * 5. Start the MCP server on stdio
  */
 async function main(): Promise<void> {
-  const { vaultPath, dbPath } = parseArgs()
+  const { vaultPath, dbPath, transport, port } = parseArgs()
 
-  console.error(`[main] Vault: ${vaultPath}`)
-  console.error(`[main] DB:    ${dbPath}`)
+  console.error(`[main] Vault:     ${vaultPath}`)
+  console.error(`[main] DB:        ${dbPath}`)
+  console.error(`[main] Transport: ${transport}${transport === 'http' ? ` (port ${port})` : ''}`)
 
   const db = openDatabase(dbPath)
 
   await scanVault(db, vaultPath)
   watchVault(db, vaultPath)
-  await startServer(db, vaultPath)
+  await startServer(db, vaultPath, transport, port)
 }
 
 main().catch((err) => {

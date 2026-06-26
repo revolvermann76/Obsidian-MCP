@@ -19,9 +19,17 @@ Run the server:
 ```bash
 node dist/index.cjs --vault /path/to/obsidian-vault
 node dist/index.cjs --vault /path/to/vault --db /path/to/index.db
+node dist/index.cjs --vault /path/to/vault --transport http
+node dist/index.cjs --vault /path/to/vault --transport http --port 8080
 npm run start:test   # runs against test-vault/
 npm run inspect      # starts MCP Inspector UI at localhost:6277
 ```
+
+CLI flags:
+- `--vault <path>` — path to Obsidian vault (required)
+- `--db <path>` — path to SQLite DB (default: `<vault>/.mcp-index.db`)
+- `--transport stdio|http` — transport mode (default: `stdio`)
+- `--port <number>` — HTTP port when `--transport http` (default: `3000`)
 
 ## Documentation
 
@@ -30,14 +38,14 @@ npm run inspect      # starts MCP Inspector UI at localhost:6277
 
 ## Architecture
 
-MCP server that indexes an Obsidian vault into SQLite and exposes query tools over stdio.
+MCP server that indexes an Obsidian vault into SQLite and exposes query tools over stdio or HTTP.
 
 **Startup sequence (`src/index.ts`):**
-1. Parse `--vault` and optional `--db` CLI args
+1. Parse `--vault`, `--db`, `--transport`, `--port` CLI args
 2. Open/create SQLite DB (`openDatabase`)
 3. Full vault scan with delta detection (`scanVault`)
 4. Start file watcher (`watchVault`)
-5. Start MCP server on stdio (`startServer`)
+5. Start MCP server on chosen transport (`startServer`)
 
 **Source files:**
 
@@ -48,7 +56,7 @@ MCP server that indexes an Obsidian vault into SQLite and exposes query tools ov
 | `src/parser.ts` | Parse raw markdown: frontmatter (gray-matter), inline tags, wikilinks (body + frontmatter values), MD links, aliases, SHA-1 hash |
 | `src/indexer.ts` | Walk vault recursively, upsert notes/tags/aliases/links/properties, remove deleted files |
 | `src/watcher.ts` | chokidar watcher → calls `indexFile` / `removeFile` on changes |
-| `src/server.ts` | Orchestrates MCP tool registration + stdio transport |
+| `src/server.ts` | Orchestrates MCP tool registration + stdio/HTTP transport |
 | `src/parser.test.ts` | Vitest unit tests for `parseNote` |
 
 **MCP tool modules (`src/tools/`):**
@@ -107,6 +115,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `better-sqlite3` is synchronous — indexer uses transactions for performance, watcher uses sync `readFileSync`
 - Change detection uses SHA-1 content hash, not mtime
 - DB defaults to `<vault>/.mcp-index.db`; override with `--db`
+- Transport is selectable via `--transport stdio|http` (default: `stdio`); HTTP uses `StreamableHTTPServerTransport` (MCP Streamable HTTP spec) with per-session UUIDs; port defaults to `3000`, override with `--port`
 - All server logs go to `stderr` so they don't interfere with the MCP stdio protocol
 - MCP tools are registered with `server.registerTool()` — `server.tool()` is deprecated as of SDK 1.29
 - Each tool module exports a `register*` function; `server.ts` calls them in sequence and contains no query logic itself
