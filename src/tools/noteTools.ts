@@ -115,6 +115,17 @@ function infoNote(db: Database, pathOrTitle: string): string {
   return lines.join('\n')
 }
 
+/**
+ * Converts a JSON-serialized property value back to a YAML-safe scalar string.
+ *
+ * Values stored in the `properties` table are JSON strings. This function
+ * parses them and formats each type appropriately for inline YAML output:
+ * arrays use flow sequence syntax, strings containing YAML special characters
+ * are double-quoted, and primitives are stringified as-is.
+ *
+ * @param json - JSON string as stored in the `properties` table.
+ * @returns A YAML-safe string representation of the value.
+ */
 function formatYamlValue(json: string): string {
   try {
     const v = JSON.parse(json) as unknown
@@ -128,6 +139,14 @@ function formatYamlValue(json: string): string {
   }
 }
 
+/**
+ * Reconstructs a YAML frontmatter block from the `properties` table for a note.
+ *
+ * @param db - Open SQLite database instance.
+ * @param noteId - Primary key of the note in the `notes` table.
+ * @returns A `---`-delimited YAML frontmatter string, or an empty string if the
+ *   note has no stored properties.
+ */
 function buildFrontmatter(db: Database, noteId: number): string {
   const rows = db
     .prepare('SELECT key, value FROM properties WHERE note_id = ? ORDER BY key')
