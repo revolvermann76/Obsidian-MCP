@@ -66,11 +66,11 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | File | Tool(s) | Concern |
 |------|---------|---------|
 | `src/tools/searchTools.ts` | `search_fulltext` | FTS5 fulltext search |
-| `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_get_backlinks`, `note_get_links`, `note_create`, `note_delete`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Reading, listing, creating, deleting, and querying notes |
+| `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_prepend`, `note_get_backlinks`, `note_get_links`, `note_create`, `note_delete`, `note_rename`, `note_move`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Reading, listing, creating, deleting, renaming, moving, and querying notes |
 | `src/tools/tagTools.ts` | `tag_search`, `tag_list`, `tag_add`, `tag_remove` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
 | `src/tools/aliasTools.ts` | `alias_list`, `alias_add`, `alias_remove` | Listing, adding, and removing aliases |
-| `src/tools/propertyTools.ts` | `property_list`, `property_add`, `property_remove` | Listing, adding, and removing frontmatter properties |
+| `src/tools/propertyTools.ts` | `property_list`, `property_add`, `property_update`, `property_remove` | Listing, adding, updating, and removing frontmatter properties |
 
 **DB schema:**
 - `notes` — id, path (relative to vault), title, content, content_hash (SHA-1), mtime
@@ -88,6 +88,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `note_info` — return metadata for a note: title, path, modified date, size, word count, outgoing links, backlinks, aliases, tags, frontmatter properties (excluding `tags`/`aliases`)
 - `note_outline` — return the heading structure (H1–H6) of a note as a flat list of heading lines
 - `note_append` — append markdown content to the end of a note by title, alias, or path; updates disk and re-indexes DB immediately
+- `note_prepend` — prepend markdown content to a note by title, alias, or path; inserted after the frontmatter block if one is present; updates disk and re-indexes DB immediately
 - `note_orphans` — list all notes that no other note links to (neither by path nor by title)
 - `note_alones` — list all notes that are both orphans and dead ends (no incoming and no outgoing links)
 - `note_list` — list all notes, filterable by `folder` (path prefix) or `tag`
@@ -96,6 +97,8 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `note_get_links` — list all outgoing links in a note; resolved links show title + path, dead links show the raw target marked as not found
 - `note_create` — create a new note; `folder` is optional (defaults to vault root); missing folders are created automatically; `content` sets initial content; `overwrite` replaces an existing file
 - `note_delete` — delete a note by path, title, or alias; refuses if a title/alias matches multiple notes — use the exact path in that case
+- `note_rename` — rename a note's filename (stays in same folder) by path, title, or alias; refuses if a title/alias matches multiple notes — use the exact path in that case
+- `note_move` — move a note to a different folder (filename unchanged) by path, title, or alias; refuses if a file with the same name already exists at the destination; missing folders are created automatically; refuses if title/alias matches multiple notes
 - `tag_search` — find notes by frontmatter tag or inline body tag
 - `tag_list` — list all unique tags in the vault with their note counts
 - `tag_add` — add a tag to a note's frontmatter by title, alias, or path; updates disk and DB immediately
@@ -105,6 +108,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `alias_remove` — remove an alias from a note identified by title, existing alias, or path; updates frontmatter on disk and DB immediately; drops the `aliases` key entirely if the list becomes empty
 - `property_list` — list frontmatter properties from the DB index; no filters → unique property names across vault; `file`/`path` → all properties for that note (`file` resolves by title or alias); add `name` → value of a specific property (or all notes that have it, if no file/path given)
 - `property_add` — add a frontmatter property to a note by title, alias, or path; `type` controls coercion (`text` default, `number`, `boolean`, `list` comma-separated → array, `date`, `json` raw JSON string); fails if property already exists
+- `property_update` — update an existing frontmatter property on a note by title, alias, or path; same `type` coercion as `property_add`; fails if the property does not exist
 - `property_remove` — remove a frontmatter property from a note by title, alias, or path; updates frontmatter on disk and DB immediately
 - `exit` — shut down the MCP server process
 

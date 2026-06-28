@@ -1,9 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { Database } from 'better-sqlite3'
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
 import { z } from 'zod'
-import { indexFile } from '../indexer.js'
+import { indexFile, removeFile } from '../indexer.js'
 import type { Note } from '../types.js'
 
 /**
@@ -463,6 +463,42 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
   )
 
   server.registerTool(
+    'note_prepend',
+    {
+      description:
+        'Prepend markdown content to a note, inserting after the frontmatter if present, ' +
+        'updating both disk and the database',
+      inputSchema: {
+        path_or_title: z.string().describe('Vault-relative path, note title, or alias'),
+        content: z.string().describe('Markdown content to prepend'),
+      },
+    },
+    async ({ path_or_title, content }) => {
+      const note = readNote(db, path_or_title)
+      if (!note) return { content: [{ type: 'text', text: `Note not found: ${path_or_title}` }] }
+
+      const absPath = join(vaultPath, note.path)
+      const raw = readFileSync(absPath, 'utf-8')
+
+      // Match the frontmatter block (--- ... ---/...) if present at the very start
+      const fmMatch = /^---\r?\n[\s\S]*?\n(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/.exec(raw)
+      let newRaw: string
+      if (fmMatch) {
+        const fm = fmMatch[0]
+        const body = raw.slice(fm.length).trimStart()
+        newRaw = fm + '\n' + content + (body ? '\n\n' + body : '\n')
+      } else {
+        newRaw = content + '\n\n' + raw.trimStart()
+      }
+
+      writeFileSync(absPath, newRaw, 'utf-8')
+      indexFile(db, vaultPath, absPath)
+
+      return { content: [{ type: 'text', text: `Prepended content to "${note.title}"` }] }
+    },
+  )
+
+  server.registerTool(
     'note_create',
     {
       description:
@@ -601,6 +637,160 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
       if (notes.length === 0) return { content: [{ type: 'text', text: 'No alone notes found.' }] }
       const text = notes.map((n) => `- **${n.title}** (${n.path})`).join('\n')
       return { content: [{ type: 'text', text }] }
+    },
+  )
+
+  server.registerTool(
+    'note_rename',
+    {
+      description:
+        'Rename a note file by path, title, or alias. ' +
+        'The note stays in the same folder — only the filename changes. ' +
+        'If a title or alias matches multiple notes, the rename is refused — use the exact vault-relative path instead.',
+      inputSchema: {
+        note: z.string().describe('Vault-relative path, note title, or alias'),
+        new_name: z.string().describe('New filename (with or without .md extension)'),
+      },
+    },
+    async ({ note: ref, new_name }) => {
+      const byPath = db
+        .prepare('SELECT id, path, title FROM notes WHERE path = ?')
+        .get(ref) as { id: number; path: string; title: string } | undefined
+
+      let target: { id: number; path: string; title: string }
+
+      if (byPath) {
+        target = byPath
+      } else {
+        const matches = db
+          .prepare(
+            `SELECT DISTINCT n.id, n.path, n.title FROM notes n
+             LEFT JOIN aliases a ON a.note_id = n.id
+             WHERE n.title = ? OR a.alias = ?`,
+          )
+          .all(ref, ref) as { id: number; path: string; title: string }[]
+
+        if (matches.length === 0)
+          return { content: [{ type: 'text', text: `Note not found: ${ref}` }] }
+
+        if (matches.length > 1) {
+          const list = matches.map((m) => `  - ${m.path}`).join('\n')
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Multiple notes match "${ref}" — use the exact path to rename:\n${list}`,
+              },
+            ],
+          }
+        }
+
+        target = matches[0]!
+      }
+
+      const filename = new_name.endsWith('.md') ? new_name : `${new_name}.md`
+      const folder = dirname(target.path)
+      const newRelPath = folder === '.' ? filename : `${folder}/${filename}`
+
+      if (newRelPath === target.path)
+        return { content: [{ type: 'text', text: `Note is already named "${filename}"` }] }
+
+      const oldAbsPath = join(vaultPath, target.path)
+      const newAbsPath = join(vaultPath, newRelPath)
+
+      if (existsSync(newAbsPath))
+        return { content: [{ type: 'text', text: `A note already exists at: ${newRelPath}` }] }
+
+      renameSync(oldAbsPath, newAbsPath)
+      removeFile(db, vaultPath, oldAbsPath)
+      indexFile(db, vaultPath, newAbsPath)
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Renamed "${target.title}" → "${filename.replace(/\.md$/, '')}" (${target.path} → ${newRelPath})`,
+          },
+        ],
+      }
+    },
+  )
+
+  server.registerTool(
+    'note_move',
+    {
+      description:
+        'Move a note to a different folder, keeping the same filename. ' +
+        'Refuses if a file with the same name already exists in the destination. ' +
+        'Missing destination folders are created automatically. ' +
+        'If a title or alias matches multiple notes, the move is refused — use the exact vault-relative path instead.',
+      inputSchema: {
+        note: z.string().describe('Vault-relative path, note title, or alias'),
+        folder: z.string().describe('Destination vault-relative folder path; use "" for the vault root'),
+      },
+    },
+    async ({ note: ref, folder }) => {
+      const byPath = db
+        .prepare('SELECT id, path, title FROM notes WHERE path = ?')
+        .get(ref) as { id: number; path: string; title: string } | undefined
+
+      let target: { id: number; path: string; title: string }
+
+      if (byPath) {
+        target = byPath
+      } else {
+        const matches = db
+          .prepare(
+            `SELECT DISTINCT n.id, n.path, n.title FROM notes n
+             LEFT JOIN aliases a ON a.note_id = n.id
+             WHERE n.title = ? OR a.alias = ?`,
+          )
+          .all(ref, ref) as { id: number; path: string; title: string }[]
+
+        if (matches.length === 0)
+          return { content: [{ type: 'text', text: `Note not found: ${ref}` }] }
+
+        if (matches.length > 1) {
+          const list = matches.map((m) => `  - ${m.path}`).join('\n')
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Multiple notes match "${ref}" — use the exact path to move:\n${list}`,
+              },
+            ],
+          }
+        }
+
+        target = matches[0]!
+      }
+
+      const filename = basename(target.path)
+      const normalizedFolder = folder.replace(/^\/+|\/+$/g, '')
+      const newRelPath = normalizedFolder ? `${normalizedFolder}/${filename}` : filename
+
+      if (newRelPath === target.path)
+        return { content: [{ type: 'text', text: `Note is already in that folder` }] }
+
+      const oldAbsPath = join(vaultPath, target.path)
+      const newAbsPath = join(vaultPath, newRelPath)
+
+      if (existsSync(newAbsPath))
+        return { content: [{ type: 'text', text: `A file already exists at: ${newRelPath}` }] }
+
+      mkdirSync(dirname(newAbsPath), { recursive: true })
+      renameSync(oldAbsPath, newAbsPath)
+      removeFile(db, vaultPath, oldAbsPath)
+      indexFile(db, vaultPath, newAbsPath)
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Moved "${target.title}" to ${newRelPath}`,
+          },
+        ],
+      }
     },
   )
 }

@@ -186,6 +186,60 @@ function addProperty(
 }
 
 /**
+ * Updates an existing frontmatter property on a note, updating both the file on disk and the database.
+ *
+ * The note is resolved by vault-relative path, title, or alias. The raw string value is
+ * coerced to the requested type before writing. Returns an error result (without throwing)
+ * if the note is not found, the property does not exist, or the value cannot be parsed.
+ *
+ * @param db - Open SQLite database instance.
+ * @param vaultPath - Absolute path to the vault root.
+ * @param noteRef - Note identifier: vault-relative path, title, or alias.
+ * @param key - Frontmatter key to update.
+ * @param rawValue - Raw string value to coerce.
+ * @param type - Target type for coercion.
+ * @returns Object with `success` flag and a human-readable `message`.
+ */
+function updateProperty(
+  db: Database,
+  vaultPath: string,
+  noteRef: string,
+  key: string,
+  rawValue: string,
+  type: PropertyType,
+): { success: boolean; message: string } {
+  const note = db
+    .prepare(
+      `SELECT n.id, n.path, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.path = ? OR n.title = ? OR a.alias = ?
+       LIMIT 1`,
+    )
+    .get(noteRef, noteRef, noteRef) as { id: number; path: string; title: string } | undefined
+
+  if (!note) return { success: false, message: `Note not found: ${noteRef}` }
+
+  const exists = db
+    .prepare('SELECT 1 FROM properties WHERE note_id = ? AND key = ?')
+    .get(note.id, key)
+  if (!exists) return { success: false, message: `Property "${key}" not found in "${note.title}"` }
+
+  const parsed = parsePropertyValue(rawValue, type)
+  if ('error' in parsed) return { success: false, message: parsed.error }
+
+  const absPath = join(vaultPath, note.path)
+  const raw = readFileSync(absPath, 'utf-8')
+  const { data, content } = matter(raw)
+
+  data[key] = parsed.yaml
+
+  writeFileSync(absPath, matter.stringify(content, data), 'utf-8')
+  db.prepare('UPDATE properties SET value = ? WHERE note_id = ? AND key = ?').run(parsed.dbJson, note.id, key)
+
+  return { success: true, message: `Updated property "${key}" in "${note.title}"` }
+}
+
+/**
  * Removes a frontmatter property from a note, updating both the file on disk and the database.
  *
  * The note is resolved by vault-relative path, title, or alias.
@@ -295,6 +349,31 @@ export function registerPropertyTools(db: Database, server: McpServer, vaultPath
     },
     async ({ note, name }) => {
       const result = removeProperty(db, vaultPath, note, name)
+      return { content: [{ type: 'text', text: result.message }] }
+    },
+  )
+
+  server.registerTool(
+    'property_update',
+    {
+      description:
+        'Update an existing frontmatter property on a note, updating both disk and the database. ' +
+        'Fails if the property does not already exist — use property_add to create it.',
+      inputSchema: {
+        note: z.string().describe('Note title, existing alias, or vault-relative path'),
+        name: z.string().describe('Frontmatter key to update'),
+        value: z.string().describe('New value as a string; coerced according to type'),
+        type: z
+          .enum(['text', 'number', 'boolean', 'list', 'date', 'json'])
+          .default('text')
+          .describe(
+            'Value type: text (default), number, boolean (true/false), ' +
+              'list (comma-separated → array), date (YYYY-MM-DD), json (raw JSON string)',
+          ),
+      },
+    },
+    async ({ note, name, value, type }) => {
+      const result = updateProperty(db, vaultPath, note, name, value, type)
       return { content: [{ type: 'text', text: result.message }] }
     },
   )
