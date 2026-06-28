@@ -93,5 +93,7 @@ export function registerSearchTools(db: Database, server: McpServer): void {
       return { content: [{ type: 'text', text }] }
     },
   )
-
 }
+
+
+//TODO search by query
