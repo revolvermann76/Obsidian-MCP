@@ -74,6 +74,41 @@ Entries are separated by `---`. Returns `No results found.` when nothing matches
 
 ---
 
+### `search_query`
+
+Search notes using Obsidian-style query syntax. The query is parsed into a boolean expression tree and evaluated against every note (optionally scoped to `folder`), since field and property filters span multiple tables that can't be folded into a single FTS5 `MATCH` expression.
+
+| Parameter        | Type            | Required | Description                                                                |
+| ---------------- | --------------- | -------- | --------------------------------------------------------------------------- |
+| `query`          | string          | yes      | Obsidian-style search query (see syntax below).                            |
+| `folder`         | string          | no       | Limit search to this vault-relative folder path (e.g. `projects`).         |
+| `limit`          | integer (1–100) | no       | Maximum number of results. Defaults to 20.                                 |
+| `case_sensitive` | boolean         | no       | Case-sensitive matching for text, field, and property values (default: `false`). |
+
+**Supported syntax:**
+| Syntax | Meaning | Example |
+| --- | --- | --- |
+| `term1 term2` | implicit AND | `meeting work` |
+| `term1 OR term2` | OR | `meeting OR call` |
+| `-term` | exclude | `meeting -cancelled` |
+| `(...)` | grouping | `meeting (work OR personal)` |
+| `"..."` | exact phrase | `"weekly sync"` |
+| `path:value` | path contains | `path:"Daily notes"` |
+| `file:value` | filename contains | `file:2022` |
+| `tag:value` | exact tag match (leading `#` optional) | `tag:work` or `tag:#work` |
+| `content:value` | body contains (excludes title) | `content:roadmap` |
+| `[key]` | has frontmatter property | `[status]` |
+| `[key:value]` | property equals value (list properties match by element) | `[status:Draft]` |
+| `[key:value OR value2]` | property equals any listed value | `[status:Draft OR Published]` |
+
+All forms combine freely, e.g. `path:projects tag:active ("blocked" OR -done) [owner:Alice]`.
+
+**Not supported** (use `search_fulltext` or `note_read` instead): Obsidian's `line:`, `block:`, `section:`, `task:`/`task-todo:`/`task-done:` scoped search, comparison operators (e.g. `[duration:<5]`), and regex (`/pattern/`).
+
+**Result:** Same format as `search_fulltext` — `**Title** (path)` with an optional highlighted snippet from the first free-text or `content:` term, entries separated by `---`. Returns `No results found.` when nothing matches.
+
+---
+
 ### `note_create`
 
 Creates a new markdown note in the vault. Missing parent folders are created automatically.

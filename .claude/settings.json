@@ -10,7 +10,15 @@
       "Bash(git -C \"/home/marc/Documents/GitHub/Obsidian MCP\" log --oneline -5)",
       "Bash(git -C \"/home/marc/Documents/GitHub/Obsidian MCP\" add CLAUDE.md src/index.ts src/server.ts)",
       "Bash(git -C '/home/marc/Documents/GitHub/Obsidian MCP' commit -m ' *)",
-      "Bash(git -C \"/home/marc/Documents/GitHub/Obsidian MCP\" push)"
+      "Bash(git -C \"/home/marc/Documents/GitHub/Obsidian MCP\" push)",
+      "Bash(git fetch *)",
+      "Skill(code-review)",
+      "Skill(code-review:*)",
+      "WebFetch(domain:obsidian.md)",
+      "Bash(npm test *)",
+      "Bash(git stash *)",
+      "Bash(npx prettier *)",
+      "Bash(npx vitest *)"
     ]
   }
 }

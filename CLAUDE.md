@@ -65,7 +65,8 @@ Each file owns one thematic concern: query logic + `register*` function called b
 
 | File | Tool(s) | Concern |
 |------|---------|---------|
-| `src/tools/searchTools.ts` | `search_fulltext` | FTS5 fulltext search |
+| `src/tools/searchTools.ts` | `search_fulltext`, `search_query` | FTS5 fulltext search; Obsidian-style query search |
+| `src/tools/searchQueryParser.ts` | — | Parser/AST/evaluator for `search_query`'s Obsidian-style syntax (no DB/MCP dependency) |
 | `src/tools/noteTools.ts` | `note_read`, `note_info`, `note_outline`, `note_append`, `note_prepend`, `note_get_backlinks`, `note_get_links`, `note_create`, `note_delete`, `note_rename`, `note_move`, `note_list`, `note_deadends`, `note_orphans`, `note_alones` | Reading, listing, creating, deleting, renaming, moving, and querying notes |
 | `src/tools/tagTools.ts` | `tag_search`, `tag_list`, `tag_add`, `tag_remove` | Filtering by tag, listing and writing tags |
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
@@ -84,6 +85,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `folder_get_subfolders` — list subfolders of a vault folder (defaults to root); `recursive=true` returns all descendant folders
 - `folder_info` — return metadata for a folder: direct/total note counts, subfolders, total word count, tags (defaults to vault root)
 - `search_fulltext` — FTS5 fulltext search with snippet highlighting, returns title + path + snippet; optional `folder` limits scope; `case_sensitive` switches to INSTR-based exact match (default: false)
+- `search_query` — Obsidian-style query search: free text, `"exact phrases"`, `OR`, implicit AND, `-term` exclusion, `(parentheses)` grouping, field filters `path:`/`file:`/`tag:`/`content:`, and property filters `[key]`/`[key:value]`/`[key:value OR value2]`; evaluates the parsed expression in memory against all notes (optionally scoped to `folder`) since field/property filters span multiple tables; does **not** support Obsidian's `line:`/`block:`/`section:`/`task:` operators, comparison operators (`[duration:<5]`), or regex (`/pattern/`)
 - `note_read` — read full content by exact path, title, or alias
 - `note_info` — return metadata for a note: title, path, modified date, size, word count, outgoing links, backlinks, aliases, tags, frontmatter properties (excluding `tags`/`aliases`)
 - `note_outline` — return the heading structure (H1–H6) of a note as a flat list of heading lines
