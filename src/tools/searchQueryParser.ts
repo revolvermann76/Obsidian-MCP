@@ -198,6 +198,12 @@ export interface QueryNoteRecord {
   properties: Record<string, string[]>
 }
 
+/**
+ * Returns the filename portion of a vault-relative path.
+ *
+ * @param path - Vault-relative path (e.g. `folder/Note.md`).
+ * @returns Everything after the last `/`, or the whole string if there's no slash.
+ */
 function basename(path: string): string {
   const idx = path.lastIndexOf('/')
   return idx === -1 ? path : path.slice(idx + 1)

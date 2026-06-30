@@ -58,11 +58,27 @@ function searchNotes(
     .all(query, limit) as { path: string; title: string; snippet: string }[]
 }
 
-// Escapes all RegExp metacharacters so a plain user string can be used as a literal pattern.
+/**
+ * Escapes all RegExp metacharacters so a plain user string can be used as a literal pattern.
+ *
+ * @param s - Raw string to escape.
+ * @returns The string with RegExp special characters backslash-escaped.
+ */
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/**
+ * Builds a highlighted snippet around the first occurrence of `query` within `content`.
+ *
+ * Extracts a ~60-character window on either side of the match, wraps every occurrence
+ * of `query` within that window in `**bold**`, and adds `...` ellipses at truncated edges.
+ *
+ * @param content - Full note body to search within.
+ * @param query - Term to locate and highlight.
+ * @param caseSensitive - Whether matching is case-sensitive. Defaults to `true`.
+ * @returns The highlighted snippet, or `''` if `query` is not found in `content`.
+ */
 function makeSnippet(content: string, query: string, caseSensitive = true): string {
   const haystack = caseSensitive ? content : content.toLowerCase()
   const needle = caseSensitive ? query : query.toLowerCase()
@@ -82,6 +98,15 @@ function makeSnippet(content: string, query: string, caseSensitive = true): stri
   return `${start > 0 ? '...' : ''}${highlighted}${end < content.length ? '...' : ''}`
 }
 
+/**
+ * Converts a JSON-encoded property value (as stored in the `properties` table) into a
+ * flat string array, for use by the `search_query` evaluator's property filter.
+ *
+ * @param json - JSON-encoded value from `properties.value`.
+ * @returns The value's elements as strings — an array maps to its stringified elements,
+ *   `null` becomes `['']`, scalars become a single-element array. Falls back to `[json]`
+ *   if the input isn't valid JSON.
+ */
 function stringifyPropertyValue(json: string): string[] {
   try {
     const v = JSON.parse(json) as unknown
@@ -101,6 +126,17 @@ interface QueryableNote {
   properties: Record<string, string[]>
 }
 
+/**
+ * Loads all notes (optionally scoped to a folder), along with their tags and frontmatter
+ * properties, into a flat in-memory array for `search_query`'s expression-tree evaluation.
+ *
+ * Joins `notes`, `tags`, and `properties` via in-memory maps keyed by `note_id`, since the
+ * query evaluator needs random access to each note's full tag/property set per candidate.
+ *
+ * @param db - Open SQLite database instance.
+ * @param folder - Optional vault-relative folder path to restrict candidates to.
+ * @returns Array of `QueryableNote` records ordered by path.
+ */
 function loadQueryableNotes(db: Database, folder?: string): QueryableNote[] {
   const noteRows = (
     folder

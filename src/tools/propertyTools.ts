@@ -96,6 +96,14 @@ function listProperties(
 
 type PropertyType = 'text' | 'number' | 'boolean' | 'list' | 'date' | 'json'
 
+/**
+ * Coerces a raw string input into the YAML value and DB representation for a given property type.
+ *
+ * @param raw - Raw string value as supplied by the caller.
+ * @param type - Target type for coercion (`text`, `number`, `boolean`, `list`, `date`, `json`).
+ * @returns `{ yaml, dbJson }` on success — `yaml` is written to frontmatter, `dbJson` to the
+ *   `properties` table — or `{ error }` if `raw` cannot be coerced to the requested type.
+ */
 function parsePropertyValue(
   raw: string,
   type: PropertyType,
