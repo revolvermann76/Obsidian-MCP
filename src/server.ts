@@ -49,8 +49,14 @@ export async function startServer(
 
     await server.connect(httpTransport)
 
-    const httpServer = createServer(async (req, res) => {
-      await httpTransport.handleRequest(req, res)
+    const httpServer = createServer((req, res) => {
+      httpTransport.handleRequest(req, res).catch((err) => {
+        console.error('[server] HTTP handler error:', err)
+        if (!res.headersSent) {
+          res.writeHead(500)
+          res.end()
+        }
+      })
     })
 
     await new Promise<void>((resolve, reject) => {

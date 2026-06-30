@@ -27,6 +27,69 @@ export function readNote(db: Database, pathOrTitle: string): Note | undefined {
     .get(pathOrTitle, pathOrTitle, pathOrTitle) as Note | undefined
 }
 
+/** Shape returned by {@link resolveNote} on success. */
+type ResolvedNote = { id: number; path: string; title: string }
+
+/**
+ * Resolves a note reference (vault-relative path, title, or alias) to a single
+ * unambiguous database row, producing a ready-to-return MCP error response when
+ * resolution fails.
+ *
+ * Resolution order:
+ * 1. Exact path match — always unambiguous, returned immediately.
+ * 2. Title / alias match — if exactly one note matches, it is returned.
+ *    If zero notes match, a "not found" error is returned.
+ *    If more than one note matches, an "ambiguous" error listing all matching
+ *    paths is returned, instructing the caller to use the exact path instead.
+ *
+ * @param db   - Open SQLite database instance.
+ * @param ref  - The identifier supplied by the tool caller: a vault-relative
+ *               path, a note title, or an alias.
+ * @param verb - Action word used in the ambiguity error message (e.g. `"delete"`,
+ *               `"rename"`, `"move"`), so the message reads naturally:
+ *               *"use the exact path to \<verb\>"*.
+ * @returns `{ note }` on success, or `{ error }` containing an MCP tool
+ *          response that the caller can return directly.
+ */
+function resolveNote(
+  db: Database,
+  ref: string,
+  verb: string,
+): { note: ResolvedNote } | { error: { content: { type: 'text'; text: string }[] } } {
+  const byPath = db
+    .prepare('SELECT id, path, title FROM notes WHERE path = ?')
+    .get(ref) as ResolvedNote | undefined
+
+  if (byPath) return { note: byPath }
+
+  const matches = db
+    .prepare(
+      `SELECT DISTINCT n.id, n.path, n.title FROM notes n
+       LEFT JOIN aliases a ON a.note_id = n.id
+       WHERE n.title = ? OR a.alias = ?`,
+    )
+    .all(ref, ref) as ResolvedNote[]
+
+  if (matches.length === 0)
+    return { error: { content: [{ type: 'text', text: `Note not found: ${ref}` }] } }
+
+  if (matches.length > 1) {
+    const list = matches.map((m) => `  - ${m.path}`).join('\n')
+    return {
+      error: {
+        content: [
+          {
+            type: 'text',
+            text: `Multiple notes match "${ref}" — use the exact path to ${verb}:\n${list}`,
+          },
+        ],
+      },
+    }
+  }
+
+  return { note: matches[0]! }
+}
+
 /**
  * Collects metadata for a single note from the database.
  *
@@ -539,44 +602,12 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
       },
     },
     async ({ note: ref }) => {
-      // Path match: unambiguous, delete directly
-      const byPath = db
-        .prepare('SELECT id, path, title FROM notes WHERE path = ?')
-        .get(ref) as { id: number; path: string; title: string } | undefined
+      const resolved = resolveNote(db, ref, 'delete')
+      if ('error' in resolved) return resolved.error
+      const { note: target } = resolved
 
-      if (byPath) {
-        unlinkSync(join(vaultPath, byPath.path))
-        db.prepare('DELETE FROM notes WHERE id = ?').run(byPath.id)
-        return { content: [{ type: 'text', text: `Deleted "${byPath.title}" (${byPath.path})` }] }
-      }
-
-      // Title / alias match: guard against ambiguity
-      const matches = db
-        .prepare(
-          `SELECT DISTINCT n.id, n.path, n.title FROM notes n
-           LEFT JOIN aliases a ON a.note_id = n.id
-           WHERE n.title = ? OR a.alias = ?`,
-        )
-        .all(ref, ref) as { id: number; path: string; title: string }[]
-
-      if (matches.length === 0)
-        return { content: [{ type: 'text', text: `Note not found: ${ref}` }] }
-
-      if (matches.length > 1) {
-        const list = matches.map((m) => `  - ${m.path}`).join('\n')
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Multiple notes match "${ref}" — use the exact path to delete:\n${list}`,
-            },
-          ],
-        }
-      }
-
-      const target = matches[0]!
+      removeFile(db, vaultPath, join(vaultPath, target.path))
       unlinkSync(join(vaultPath, target.path))
-      db.prepare('DELETE FROM notes WHERE id = ?').run(target.id)
       return { content: [{ type: 'text', text: `Deleted "${target.title}" (${target.path})` }] }
     },
   )
@@ -653,40 +684,9 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
       },
     },
     async ({ note: ref, new_name }) => {
-      const byPath = db
-        .prepare('SELECT id, path, title FROM notes WHERE path = ?')
-        .get(ref) as { id: number; path: string; title: string } | undefined
-
-      let target: { id: number; path: string; title: string }
-
-      if (byPath) {
-        target = byPath
-      } else {
-        const matches = db
-          .prepare(
-            `SELECT DISTINCT n.id, n.path, n.title FROM notes n
-             LEFT JOIN aliases a ON a.note_id = n.id
-             WHERE n.title = ? OR a.alias = ?`,
-          )
-          .all(ref, ref) as { id: number; path: string; title: string }[]
-
-        if (matches.length === 0)
-          return { content: [{ type: 'text', text: `Note not found: ${ref}` }] }
-
-        if (matches.length > 1) {
-          const list = matches.map((m) => `  - ${m.path}`).join('\n')
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Multiple notes match "${ref}" — use the exact path to rename:\n${list}`,
-              },
-            ],
-          }
-        }
-
-        target = matches[0]!
-      }
+      const resolved = resolveNote(db, ref, 'rename')
+      if ('error' in resolved) return resolved.error
+      const { note: target } = resolved
 
       const filename = new_name.endsWith('.md') ? new_name : `${new_name}.md`
       const folder = dirname(target.path)
@@ -701,8 +701,9 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
       if (existsSync(newAbsPath))
         return { content: [{ type: 'text', text: `A note already exists at: ${newRelPath}` }] }
 
-      renameSync(oldAbsPath, newAbsPath)
+      db.prepare('UPDATE links SET target_path = ? WHERE target_path = ?').run(newRelPath, target.path)
       removeFile(db, vaultPath, oldAbsPath)
+      renameSync(oldAbsPath, newAbsPath)
       indexFile(db, vaultPath, newAbsPath)
 
       return {
@@ -730,40 +731,9 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
       },
     },
     async ({ note: ref, folder }) => {
-      const byPath = db
-        .prepare('SELECT id, path, title FROM notes WHERE path = ?')
-        .get(ref) as { id: number; path: string; title: string } | undefined
-
-      let target: { id: number; path: string; title: string }
-
-      if (byPath) {
-        target = byPath
-      } else {
-        const matches = db
-          .prepare(
-            `SELECT DISTINCT n.id, n.path, n.title FROM notes n
-             LEFT JOIN aliases a ON a.note_id = n.id
-             WHERE n.title = ? OR a.alias = ?`,
-          )
-          .all(ref, ref) as { id: number; path: string; title: string }[]
-
-        if (matches.length === 0)
-          return { content: [{ type: 'text', text: `Note not found: ${ref}` }] }
-
-        if (matches.length > 1) {
-          const list = matches.map((m) => `  - ${m.path}`).join('\n')
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Multiple notes match "${ref}" — use the exact path to move:\n${list}`,
-              },
-            ],
-          }
-        }
-
-        target = matches[0]!
-      }
+      const resolved = resolveNote(db, ref, 'move')
+      if ('error' in resolved) return resolved.error
+      const { note: target } = resolved
 
       const filename = basename(target.path)
       const normalizedFolder = folder.replace(/^\/+|\/+$/g, '')
@@ -779,8 +749,9 @@ export function registerNoteTools(db: Database, server: McpServer, vaultPath: st
         return { content: [{ type: 'text', text: `A file already exists at: ${newRelPath}` }] }
 
       mkdirSync(dirname(newAbsPath), { recursive: true })
-      renameSync(oldAbsPath, newAbsPath)
+      db.prepare('UPDATE links SET target_path = ? WHERE target_path = ?').run(newRelPath, target.path)
       removeFile(db, vaultPath, oldAbsPath)
+      renameSync(oldAbsPath, newAbsPath)
       indexFile(db, vaultPath, newAbsPath)
 
       return {

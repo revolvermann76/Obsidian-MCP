@@ -28,6 +28,10 @@ function parseArgs(): { vaultPath: string; dbPath: string; transport: 'stdio' | 
     dbIdx !== -1 && args[dbIdx + 1] ? resolve(args[dbIdx + 1]!) : join(vaultPath, '.mcp-index.db')
 
   const transportIdx = args.indexOf('--transport')
+  if (transportIdx !== -1 && !args[transportIdx + 1]) {
+    console.error('--transport requires a value: "stdio" or "http"')
+    process.exit(1)
+  }
   const transportArg = transportIdx !== -1 ? args[transportIdx + 1] : 'stdio'
   if (transportArg !== 'stdio' && transportArg !== 'http') {
     console.error('--transport must be "stdio" or "http"')

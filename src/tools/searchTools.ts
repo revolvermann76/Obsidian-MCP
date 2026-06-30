@@ -57,13 +57,23 @@ function searchNotes(
     .all(query, limit) as { path: string; title: string; snippet: string }[]
 }
 
+// Escapes all RegExp metacharacters so a plain user string can be used as a literal pattern.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function makeSnippet(content: string, query: string): string {
   const idx = content.indexOf(query)
   if (idx === -1) return ''
   const start = Math.max(0, idx - 60)
   const end = Math.min(content.length, idx + query.length + 60)
-  const fragment = content.slice(start, end).replace(query, `**${query}**`)
-  return `${start > 0 ? '...' : ''}${fragment}${end < content.length ? '...' : ''}`
+  const fragment = content.slice(start, end)
+
+  // Use a global RegExp so every occurrence in the window is highlighted,
+  // and escape query so characters like $1 or (foo) are treated as literals.
+  const highlighted = fragment.replace(new RegExp(escapeRegExp(query), 'g'), `**${query}**`)
+
+  return `${start > 0 ? '...' : ''}${highlighted}${end < content.length ? '...' : ''}`
 }
 
 /**
