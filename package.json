@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "format:check": "prettier --check src/",
     "start:test": "npm run build && node dist/index.cjs --vault ./test-vault --db ./test-vault/.mcp-index.db",
+    "start:http": "npm run build && node dist/index.cjs --vault /mnt/datastore/mega/my/documents/notes/zettelkasten2/zettelkasten/documents/ --transport http",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.cjs --vault ./test-vault --db ./test-vault/.mcp-index.db"
   },
   "repository": {
