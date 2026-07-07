@@ -521,6 +521,17 @@ Removes a frontmatter property from a note. Updates the file on disk and deletes
 
 ## Server
 
+### `index`
+
+Reindexes the vault: rescans all markdown files on disk and syncs the database with the current
+state (new and changed notes are re-parsed via the same delta-detection scan run at startup;
+notes whose files were deleted since the last scan are removed from the index). Takes no
+parameters.
+
+**Result:** `Vault reindexed. <n> notes currently indexed.`
+
+---
+
 ### `exit`
 
 Shuts down the MCP server process. Takes no parameters.

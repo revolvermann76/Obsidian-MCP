@@ -10,6 +10,7 @@ import { registerAliasesTools } from './tools/aliasTools.js'
 import { registerTagTools } from './tools/tagTools.js'
 import { registerPropertyTools } from './tools/propertyTools.js'
 import { registerFolderTools } from './tools/folderTools.js'
+import { registerIndexTools } from './tools/indexTools.js'
 
 /**
  * Registers all MCP tools and starts the server on stdio.
@@ -35,6 +36,7 @@ export async function startServer(
   registerSearchTools(db, server)
   registerTagTools(db, server, vaultPath)
   registerFolderTools(db, server)
+  registerIndexTools(db, server, vaultPath)
 
   server.registerTool('exit', { description: 'Shut down the MCP server process.' }, async () => {
     console.error('[server] Shutting down by tool request')

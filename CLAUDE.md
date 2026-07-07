@@ -72,6 +72,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 | `src/tools/folderTools.ts` | `folder_get_subfolders`, `folder_info` | Listing vault folder structure and folder metadata |
 | `src/tools/aliasTools.ts` | `alias_list`, `alias_add`, `alias_remove` | Listing, adding, and removing aliases |
 | `src/tools/propertyTools.ts` | `property_list`, `property_add`, `property_update`, `property_remove` | Listing, adding, updating, and removing frontmatter properties |
+| `src/tools/indexTools.ts` | `index` | Triggering a full vault rescan to bring the database up to date |
 
 **DB schema:**
 - `notes` — id, path (relative to vault), title, content, content_hash (SHA-1), mtime
@@ -112,6 +113,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - `property_add` — add a frontmatter property to a note by title, alias, or path; `type` controls coercion (`text` default, `number`, `boolean`, `list` comma-separated → array, `date`, `json` raw JSON string); fails if property already exists
 - `property_update` — update an existing frontmatter property on a note by title, alias, or path; same `type` coercion as `property_add`; fails if the property does not exist
 - `property_remove` — remove a frontmatter property from a note by title, alias, or path; updates frontmatter on disk and DB immediately
+- `index` — rescan the vault and sync the database to the current file state (add/update changed notes, remove deleted ones); same delta-detection scan as startup, reuses `scanVault`
 - `exit` — shut down the MCP server process
 
 **Key design decisions:**
