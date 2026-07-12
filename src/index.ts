@@ -1,8 +1,15 @@
+import { readFile } from 'node:fs/promises'
 import { resolve, join } from 'node:path'
 import { openDatabase } from './db.js'
 import { scanVault } from './indexer.js'
 import { watchVault } from './watcher.js'
 import { startServer } from './server.js'
+
+/**
+ * Instructions sent to MCP clients when no `--instructions` file is provided.
+ */
+const DEFAULT_INSTRUCTIONS =
+  'This server exposes an Obsidian vault indexed in SQLite. Use the available tools to search, read, and modify notes, tags, aliases, properties, and folders within that vault.'
 
 /**
  * Parses the `--vault` and optional `--db` command-line arguments.
@@ -12,12 +19,18 @@ import { startServer } from './server.js'
  * @returns An object containing the resolved absolute paths for the vault
  *   directory and the SQLite database file.
  */
-function parseArgs(): { vaultPath: string; dbPath: string; transport: 'stdio' | 'http'; port: number } {
+function parseArgs(): {
+  vaultPath: string
+  dbPath: string
+  transport: 'stdio' | 'http'
+  port: number
+  instructionsPath: string | undefined
+} {
   const args = process.argv.slice(2)
   const vaultIdx = args.indexOf('--vault')
   if (vaultIdx === -1 || !args[vaultIdx + 1]) {
     console.error(
-      'Usage: obsidian-mcp --vault <path-to-vault> [--db <path-to-db>] [--transport stdio|http] [--port <number>]',
+      'Usage: obsidian-mcp --vault <path-to-vault> [--db <path-to-db>] [--transport stdio|http] [--port <number>] [--instructions <path-to-file>]',
     )
     process.exit(1)
   }
@@ -46,7 +59,17 @@ function parseArgs(): { vaultPath: string; dbPath: string; transport: 'stdio' | 
     process.exit(1)
   }
 
-  return { vaultPath, dbPath, transport, port: portArg }
+  const instructionsIdx = args.indexOf('--instructions')
+  if (instructionsIdx !== -1 && !args[instructionsIdx + 1]) {
+    console.error('--instructions requires a file path')
+    process.exit(1)
+  }
+  const instructionsPath =
+    instructionsIdx !== -1 && args[instructionsIdx + 1]
+      ? resolve(args[instructionsIdx + 1]!)
+      : undefined
+
+  return { vaultPath, dbPath, transport, port: portArg, instructionsPath }
 }
 
 /**
@@ -60,17 +83,24 @@ function parseArgs(): { vaultPath: string; dbPath: string; transport: 'stdio' | 
  * 5. Start the MCP server on stdio
  */
 async function main(): Promise<void> {
-  const { vaultPath, dbPath, transport, port } = parseArgs()
+  const { vaultPath, dbPath, transport, port, instructionsPath } = parseArgs()
 
   console.error(`[main] Vault:     ${vaultPath}`)
   console.error(`[main] DB:        ${dbPath}`)
   console.error(`[main] Transport: ${transport}${transport === 'http' ? ` (port ${port})` : ''}`)
 
+  const instructions = instructionsPath
+    ? await readFile(instructionsPath, 'utf-8')
+    : DEFAULT_INSTRUCTIONS
+  console.error(
+    `[main] Instructions: ${instructionsPath ? `from ${instructionsPath}` : 'default (Obsidian vault)'}`,
+  )
+
   const db = openDatabase(dbPath)
 
   await scanVault(db, vaultPath)
   watchVault(db, vaultPath)
-  await startServer(db, vaultPath, transport, port)
+  await startServer(db, vaultPath, transport, port, instructions)
 }
 
 main().catch((err) => {
