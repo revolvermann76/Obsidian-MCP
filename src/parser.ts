@@ -27,7 +27,7 @@ const INLINE_TAG_RE =
 export function parseNote(raw: string, filePath: string): ParsedNote {
   const { data, content } = matter(raw)
 
-  const title = (data['title'] as string | undefined) ?? titleFromPath(filePath)
+  const title = normalizeTitle(data['title']) ?? titleFromPath(filePath)
 
   const frontmatterTags = normalizeTags(data['tags'])
   const inlineTags: string[] = []
@@ -51,6 +51,23 @@ export function parseNote(raw: string, filePath: string): ParsedNote {
   const hash = createHash('sha1').update(raw).digest('hex')
 
   return { title, content, tags, aliases, links, hash, properties: data }
+}
+
+/**
+ * Coerces the raw `title` frontmatter value into a string, if present.
+ *
+ * YAML parses unquoted date-like scalars (e.g. `title: 2026-07-13`) into `Date`
+ * objects rather than strings. Binding a `Date` directly to a SQLite column
+ * throws, so it's normalized to its `YYYY-MM-DD` form here instead.
+ *
+ * @param raw - The raw value of the `title` frontmatter key.
+ * @returns A string title, or `undefined` if no `title` key was present.
+ */
+function normalizeTitle(raw: unknown): string | undefined {
+  if (raw === undefined || raw === null) return undefined
+  if (typeof raw === 'string') return raw
+  if (raw instanceof Date) return raw.toISOString().slice(0, 10)
+  return String(raw)
 }
 
 /**
