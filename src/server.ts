@@ -17,6 +17,7 @@ import { registerIndexTools } from './tools/indexTools.js'
  *
  *
  * @param db - Open SQLite database instance populated by the indexer.
+ * @param instructions - Instructions text advertised to MCP clients on initialize.
  * @returns A promise that resolves once the server is connected to the stdio transport.
  */
 export async function startServer(
@@ -24,11 +25,15 @@ export async function startServer(
   vaultPath: string,
   transport: 'stdio' | 'http' = 'stdio',
   port = 3000,
+  instructions: string,
 ): Promise<void> {
-  const server = new McpServer({
-    name: 'obsidian-mcp',
-    version: '1.0.0',
-  })
+  const server = new McpServer(
+    {
+      name: 'obsidian-mcp',
+      version: '1.0.0',
+    },
+    { instructions },
+  )
 
   registerAliasesTools(db, server, vaultPath)
   registerPropertyTools(db, server, vaultPath)

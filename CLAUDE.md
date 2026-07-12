@@ -21,6 +21,7 @@ node dist/index.cjs --vault /path/to/obsidian-vault
 node dist/index.cjs --vault /path/to/vault --db /path/to/index.db
 node dist/index.cjs --vault /path/to/vault --transport http
 node dist/index.cjs --vault /path/to/vault --transport http --port 8080
+node dist/index.cjs --vault /path/to/vault --instructions /path/to/instructions.md
 npm run start:test   # runs against test-vault/
 npm run inspect      # starts MCP Inspector UI at localhost:6277
 ```
@@ -30,6 +31,7 @@ CLI flags:
 - `--db <path>` — path to SQLite DB (default: `<vault>/.mcp-index.db`)
 - `--transport stdio|http` — transport mode (default: `stdio`)
 - `--port <number>` — HTTP port when `--transport http` (default: `3000`)
+- `--instructions <path>` — file whose contents are sent as the MCP `instructions` field on `initialize` (default: a built-in note that this server exposes an Obsidian vault)
 
 ## Documentation
 
@@ -128,6 +130,7 @@ Each file owns one thematic concern: query logic + `register*` function called b
 - MCP tools are registered with `server.registerTool()` — `server.tool()` is deprecated as of SDK 1.29
 - Each tool module exports a `register*` function; `server.ts` calls them in sequence and contains no query logic itself
 - `startServer` receives `vaultPath` (in addition to `db`) so write-capable tools can resolve absolute file paths
+- `startServer` also receives the resolved `instructions` string (read from `--instructions <path>` or a built-in default), passed through to the `McpServer` constructor's `instructions` option so it's returned to clients in the `initialize` response
 - Shared types (`Note`, `ParsedNote`) live in `src/types.ts`; `parser.ts` re-exports `ParsedNote` for backwards compatibility
 - chokidar watches the vault directory directly (not a glob pattern) with `usePolling: true` — glob-based watching is unreliable on Windows with chokidar v5
 - Inline tags (`#tag`, `#tag/subtag`) are extracted from the note body and merged with frontmatter tags; subtags are stored as a single flat string
