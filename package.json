@@ -7,7 +7,7 @@
   "scripts": {
     "prebuild": "npm ci",
     "build": "npm run typecheck && npm run bundle",
-    "bundle": "esbuild src/index.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/index.cjs",
+    "bundle": "esbuild src/index.ts --bundle --minify --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/index.cjs",
     "dev": "esbuild src/index.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=dist/index.cjs --watch",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write src/",
